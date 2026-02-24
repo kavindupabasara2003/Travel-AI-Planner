@@ -1,67 +1,85 @@
 import { defineStore } from 'pinia'
-import { supabase } from '../supabase'
+import axios from 'axios'
 import router from '../router'
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null,
-        session: null,
+        token: null, // JWT Access Token
+        refreshToken: null,
         loading: false,
         authModalOpen: false
     }),
 
     actions: {
         async initializeAuth() {
-            // Mock Initialization - Check Local Storage or default to null
-            const storedUser = localStorage.getItem('demo_user')
-            if (storedUser) {
+            const storedToken = localStorage.getItem('access_token')
+            const storedRefresh = localStorage.getItem('refresh_token')
+            const storedUser = localStorage.getItem('user_data')
+
+            if (storedToken && storedUser) {
+                this.token = storedToken
+                this.refreshToken = storedRefresh
                 this.user = JSON.parse(storedUser)
-                // Ensure session exists so route guards pass
-                this.session = { access_token: 'mock_token', user: this.user }
             }
         },
 
         async signInWithEmail(email, password) {
-            this.loading = true
+            this.loading = true;
+            try {
+                const response = await axios.post('http://127.0.0.1:8000/api/v1/token/', {
+                    username: email,
+                    password: password
+                });
 
-            // SUPERVISOR DEMO BYPASS
-            if (email === 'kavindu.pabasaraz12@gmail.com' && password === 'kav1') {
-                // Success
-                this.user = {
-                    id: 'supervisor_123',
-                    email: email,
-                    role: 'authenticated'
-                }
-                this.session = { access_token: 'mock_token_123', user: this.user }
+                this.token = response.data.access;
+                this.refreshToken = response.data.refresh;
+                this.user = { email: email };
 
-                // Persist locally so refresh works
-                localStorage.setItem('demo_user', JSON.stringify(this.user))
+                localStorage.setItem('access_token', this.token);
+                localStorage.setItem('refresh_token', this.refreshToken);
+                localStorage.setItem('user_data', JSON.stringify(this.user));
 
-                this.loading = false
-                this.authModalOpen = false
-                // Force redirect
-                await router.push('/planner')
-                return
+                this.authModalOpen = false;
+                await router.push('/planner');
+            } catch (error) {
+                alert("Login Failed: Please check your credentials.");
+                console.error(error);
+            } finally {
+                this.loading = false;
             }
-
-            // Fail for others
-            this.loading = false
-            alert("Supervisor Demo Access Only")
         },
 
         async signUpWithEmail(email, password) {
-            alert("Sign Up disabled for Supervisor Demo. Please Log In.")
+            this.loading = true;
+            try {
+                await axios.post('http://127.0.0.1:8000/api/v1/register/', {
+                    email: email,
+                    password: password
+                });
+
+                // Immediately sign in after successful registration
+                await this.signInWithEmail(email, password);
+            } catch (error) {
+                alert("Sign Up Failed: " + (error.response?.data?.error || "Error"));
+                console.error(error);
+            } finally {
+                this.loading = false;
+            }
         },
 
         async signOut() {
-            this.user = null
-            this.session = null
-            localStorage.removeItem('demo_user')
-            router.push('/')
+            this.user = null;
+            this.token = null;
+            this.refreshToken = null;
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user_data');
+            router.push('/');
         },
 
         toggleAuthModal(isOpen) {
-            this.authModalOpen = isOpen
+            this.authModalOpen = isOpen;
         }
     }
-})
+});

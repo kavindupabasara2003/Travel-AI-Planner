@@ -1,11 +1,16 @@
 <script setup>
 import { ref, computed } from 'vue'
+import axios from 'axios'
 import { useChatStore } from '../../stores/chat'
+import { useAuthStore } from '../../stores/auth'
 
 const props = defineProps(['trip'])
 const chatStore = useChatStore()
+const authStore = useAuthStore()
 const assistantResponse = ref('')
 const isLoadingAdvice = ref(false)
+const isSaving = ref(false)
+const saveSuccess = ref(false)
 
 // Journey Progression State
 const currentDayIndex = ref(0)
@@ -57,6 +62,29 @@ const handleComplete = () => {
     }
 }
 
+const saveTrip = async () => {
+    if (!props.trip || !authStore.token) return
+    isSaving.value = true
+    saveSuccess.value = false
+    
+    try {
+        await axios.post('http://127.0.0.1:8000/api/v1/trips/', {
+            title: props.trip.title || "My Custom Itinerary",
+            itinerary_json: props.trip
+        }, {
+            headers: {
+                'Authorization': `Bearer ${authStore.token}`
+            }
+        })
+        saveSuccess.value = true
+    } catch (error) {
+        console.error("Save Error:", error)
+        alert("Failed to save trip. Please check if you are logged in.")
+    } finally {
+        isSaving.value = false
+    }
+}
+
 const askAssistant = async (query) => {
     if (!props.trip) return
     isLoadingAdvice.value = true
@@ -105,7 +133,15 @@ const askAssistant = async (query) => {
       <div class="live-indicator">
         <span class="pulse-dot"></span> LIVE
       </div>
-      <div class="time">{{ currentTime }}</div>
+      <div class="header-actions">
+        <span class="time">{{ currentTime }}</span>
+        <button v-if="authStore.token && !saveSuccess" class="btn btn-sm btn-primary save-btn" @click="saveTrip" :disabled="isSaving">
+          {{ isSaving ? 'Saving...' : '💾 Save Trip' }}
+        </button>
+        <button v-if="saveSuccess" class="btn btn-sm save-btn success-btn" disabled>
+          ✅ Saved
+        </button>
+      </div>
     </div>
 
     <div class="current-activity" v-if="!isTripFinished">
@@ -203,6 +239,30 @@ const askAssistant = async (query) => {
   border-radius: 50%;
   box-shadow: 0 0 10px #ef4444;
   animation: pulse 1.5s infinite;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.save-btn {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid var(--color-primary);
+  color: white;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: var(--color-primary);
+}
+
+.success-btn {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #10b981;
 }
 
 .time {

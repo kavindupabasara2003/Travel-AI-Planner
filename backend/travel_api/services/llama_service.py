@@ -90,27 +90,15 @@ class LLaMAService:
                 ],
                 "suggested_restaurants": ["Name of a real restaurant in this city", "Another real restaurant"],
                 "narrative": "Write a full descriptive paragraph about the day's experiences."
-            }},
-            {{
-                "day": 2,
-                "location": "Name of the logical next city in Sri Lanka",
-                "theme": "Must relate to the overall {trip_type} style",
-                "activities": [
-                    {{"time": "Morning", "activity": "Specific Activity Name", "description": "Write a detailed description of what they will do"}},
-                    {{"time": "Afternoon", "activity": "Specific Activity Name", "description": "Write a detailed description of what they will do"}}
-                ],
-                "suggested_restaurants": ["Name of a real restaurant in this city", "Another real restaurant"],
-                "narrative": "Write a full descriptive paragraph about the day's experiences."
             }}
-             // CRITICAL: CONTINUE GENERATING objects for Day 3, Day 4, up to Day {duration}
           ]
         }}
         
         IMPORTANT RULES:
         1. CRITICAL: Day 1 location MUST absolutely be "{start_loc}". Do not start the trip anywhere else.
-        2. CRITICAL: You MUST generate EXACTLY {duration} objects in the "days" array. Do not stop at Day 1 or Day 2.
+        2. CRITICAL: You MUST generate EXACTLY {duration} objects in the "days" array (Day 1, Day 2, ..., Day {duration}). Do not stop early. Let the output be as long as necessary.
         3. Replace ALL placeholder text with real, factual Sri Lankan locations, activities, and restaurant names relevant to a "{trip_type}" style trip.
-        4. Maintain strict JSON formatting.
+        4. Maintain strict JSON formatting. DO NOT include code comments in the output JSON.
         """
 
         # 3. LLaMA Generation
@@ -122,7 +110,7 @@ class LLaMAService:
             ],
             "stream": False,
             "format": "json",
-            "options": {"temperature": 0.4, "num_ctx": 4096} # Increased temp slightly to force creativity away from prompt
+            "options": {"temperature": 0.4, "num_ctx": 8192, "num_predict": -1} # Increased context and removed token limit
         }
 
         try:

@@ -32,7 +32,7 @@ export const useChatStore = defineStore('chat', {
                     { preferences: formData }, // Backend now expects this to be dict OR string
                     {
                         headers: {
-                            'Authorization': `Bearer ${authStore.session?.access_token}`
+                            'Authorization': `Bearer ${authStore.token}`
                         }
                     }
                 )
@@ -64,6 +64,16 @@ export const useChatStore = defineStore('chat', {
             }
         },
 
+        loadSavedItinerary(tripJson) {
+            this.itinerary = tripJson
+            // Push a fake conversational context message so it looks natural in Planner
+            this.messages.push({
+                id: Date.now(),
+                role: 'assistant',
+                content: `I've opened your saved trip: ${tripJson.title}! Feel free to hit "Start Journey" when you're ready.`
+            })
+        },
+
         async sendMessage(text) {
             // Optimistic Update
             this.messages.push({
@@ -85,7 +95,7 @@ export const useChatStore = defineStore('chat', {
                     { preferences: text },
                     {
                         headers: {
-                            'Authorization': `Bearer ${authStore.session?.access_token}`
+                            'Authorization': `Bearer ${authStore.token}`
                         }
                     }
                 )

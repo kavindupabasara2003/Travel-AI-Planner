@@ -78,6 +78,12 @@ const handlePlanSubmit = async (formData) => {
             Back to Planner
         </button>
       </div>
+      
+      <div class="actions-area" style="margin-top: auto;">
+        <router-link to="/profile" class="btn btn-secondary full-width" style="text-align: center; text-decoration: none; display: block; padding: 0.8rem;">
+            👤 My Profile
+        </router-link>
+      </div>
     </div>
     
     <div class="main-content">

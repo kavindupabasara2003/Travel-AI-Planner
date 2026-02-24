@@ -1,8 +1,14 @@
 <script setup>
+import { ref } from 'vue'
+import axios from 'axios'
 import { useChatStore } from '../../stores/chat'
+import { useAuthStore } from '../../stores/auth'
 import ItineraryCard from './ItineraryCard.vue'
 
 const chatStore = useChatStore()
+const authStore = useAuthStore()
+const isSaving = ref(false)
+const saveSuccess = ref(false)
 
 const getLocation = (itinerary) => {
     // Try to get the first day's location, or fallback to 'Sri Lanka'
@@ -10,6 +16,29 @@ const getLocation = (itinerary) => {
         return itinerary.days[0].location || 'Sri Lanka'
     }
     return 'Sri Lanka'
+}
+
+const saveTrip = async () => {
+    if (!chatStore.itinerary || !authStore.token) return
+    isSaving.value = true
+    saveSuccess.value = false
+    
+    try {
+        await axios.post('http://127.0.0.1:8000/api/v1/trips/', {
+            title: chatStore.itinerary.title || "My Custom Itinerary",
+            itinerary_json: chatStore.itinerary
+        }, {
+            headers: {
+                'Authorization': `Bearer ${authStore.token}`
+            }
+        })
+        saveSuccess.value = true
+    } catch (error) {
+        console.error("Save Error:", error)
+        alert("Failed to save trip. Please check if you are logged in.")
+    } finally {
+        isSaving.value = false
+    }
 }
 </script>
 
@@ -28,12 +57,24 @@ const getLocation = (itinerary) => {
         <div class="hero-bg"></div>
         <div class="hero-overlay"></div>
         <div class="hero-text">
-            <h1>{{ chatStore.itinerary.title }}</h1>
-            <p>{{ chatStore.itinerary.summary }}</p>
-            <div class="hero-tags">
-                <span class="tag">{{ chatStore.itinerary.total_days || chatStore.itinerary.days.length }} Days</span>
-                <span class="tag">{{ getLocation(chatStore.itinerary) }}</span>
-                <span class="tag">{{ chatStore.itinerary.trip_theme || 'Adventure' }}</span>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+              <div>
+                <h1>{{ chatStore.itinerary.title }}</h1>
+                <p>{{ chatStore.itinerary.summary }}</p>
+                <div class="hero-tags">
+                    <span class="tag">{{ chatStore.itinerary.total_days || chatStore.itinerary.days.length }} Days</span>
+                    <span class="tag">{{ getLocation(chatStore.itinerary) }}</span>
+                    <span class="tag">{{ chatStore.itinerary.trip_theme || 'Adventure' }}</span>
+                </div>
+              </div>
+              <div v-if="authStore.token" class="save-action">
+                  <button v-if="!saveSuccess" class="btn btn-primary save-btn" @click="saveTrip" :disabled="isSaving">
+                    {{ isSaving ? 'Saving...' : '💾 Save Trip' }}
+                  </button>
+                  <button v-else class="btn save-btn success-btn" disabled>
+                    ✅ Saved to Profile
+                  </button>
+              </div>
             </div>
         </div>
       </div>
@@ -142,6 +183,34 @@ const getLocation = (itinerary) => {
     font-size: 0.85rem;
     color: white;
     border: 1px solid rgba(255,255,255,0.2);
+}
+
+.save-action {
+  margin-bottom: 0.5rem;
+  margin-right: 1rem;
+}
+
+.save-btn {
+  font-size: 0.95rem;
+  padding: 0.6rem 1.2rem;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid var(--color-primary);
+  color: white;
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: var(--color-primary);
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+}
+
+.success-btn {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #10b981;
 }
 
 /* Timeline Layout */

@@ -12,8 +12,12 @@ const router = createRouter({
         {
             path: '/planner',
             name: 'planner',
-            // route level code-splitting
             component: () => import('../views/PlannerView.vue')
+        },
+        {
+            path: '/profile',
+            name: 'profile',
+            component: () => import('../views/ProfileView.vue')
         }
     ]
 })

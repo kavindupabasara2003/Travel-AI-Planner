@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AuthModal from '../components/AuthModal.vue'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const mouseX = ref(0)
 const mouseY = ref(0)
 const heroRef = ref(null)
@@ -23,6 +25,14 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('mousemove', handleMouseMove)
 })
+
+const handlePlanClick = () => {
+  if (authStore.token) {
+    router.push('/planner')
+  } else {
+    authStore.toggleAuthModal(true)
+  }
+}
 </script>
 
 <template>
@@ -35,7 +45,8 @@ onUnmounted(() => {
         <a href="#">Stays</a>
         <a href="#">Flights</a>
       </div>
-      <button class="btn-glass sm" @click="authStore.toggleAuthModal(true)">Login</button>
+      <button v-if="!authStore.token" class="btn-glass sm" @click="authStore.toggleAuthModal(true)">Login</button>
+      <router-link v-else to="/profile" class="btn-glass sm">My Profile</router-link>
     </nav>
 
     <!-- Scenic Background with Overlay -->
@@ -91,7 +102,7 @@ onUnmounted(() => {
       </h1>
       
       <!-- Layla-style Input Trigger -->
-      <div class="search-container glass-panel" @click="authStore.toggleAuthModal(true)">
+      <div class="search-container glass-panel" @click="handlePlanClick">
         <div class="input-fake">
           <span class="search-icon">✨</span>
           <span class="placeholder-text">Tell me your dream trip style & budget...</span>

@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL + pgvector
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: travel-ai-postgres-prod
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: travel_ai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # 2. Django Backend
+  api:
+    build: ./backend
+    container_name: travel-ai-backend
+    command: gunicorn --bind 0.0.0.0:8000 travel_ai_backend.wsgi:application
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+    restart: unless-stopped
+
+  # 3. Vue Frontend
+  frontend:
+    build: ./frontend
+    container_name: travel-ai-frontend
+    ports:
+      - "5173:80" # Mapping to standard Vue dev port for familiarity, bridging to Nginx
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

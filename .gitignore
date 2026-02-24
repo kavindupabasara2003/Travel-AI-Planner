@@ -1,0 +1,62 @@
+# Virtual Environment
+venv/
+env/
+.venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Node / JS
+node_modules/
+dist/
+build/
+.npm
+.yarn
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Travel AI Specific
+backend/data/cache/
+data/cache/
+*.json.bak
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+models/
+data/*.jsonl

@@ -1,22 +1,31 @@
-/* Base CSS - Layla AI Theme (Dark Void) */
+/* Base CSS - Professional White/Pastel Theme (Layla AI Inspired) */
 :root {
-    /* Colors */
-    --color-bg-dark: #050505;
-    /* Near Black */
-    --color-bg-card: #0a0a0a;
+    /* Colors - Clean Light Theme */
+    --color-bg-light: #f9f9fb;
+    /* Soft off-white background */
+    --color-bg-card: #ffffff;
+    /* Pure white for cards/surfaces */
 
-    /* Accents - Neon Purple/Blue/Pink */
+    /* Accents - Sophisticated Pastel */
     --color-primary: #8b5cf6;
-    /* Violet */
-    --color-primary-glow: rgba(139, 92, 246, 0.5);
+    /* Main Indigo */
+    --color-primary-light: #f3f0ff;
+    /* Very pale purple background for active states */
+    --color-primary-glow: rgba(139, 92, 246, 0.15);
+    /* Soft purple shadow */
 
-    --color-secondary: #3b82f6;
-    /* Blue */
-    --color-accent: #ec4899;
-    /* Pink */
+    --color-secondary: #fce7f3;
+    /* Pale pink secondary accent */
+    --color-accent: #10b981;
+    /* Soft green for success/badges */
 
-    --color-text-main: #ffffff;
-    --color-text-muted: #a3a3a3;
+    /* Typography Colors */
+    --color-text-main: #111827;
+    /* Near black for incredible contrast */
+    --color-text-muted: #6b7280;
+    /* Slate gray for secondary text */
+    --color-border: #f3f4f6;
+    /* Very light gray for clean lines */
 
     /* Spacing */
     --spacing-xs: 0.5rem;
@@ -31,10 +40,12 @@
     --radius-lg: 24px;
     --radius-full: 9999px;
 
+    /* Subtle Modern Shadows (Removing heavy glassmorphism) */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.02);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
     --shadow-glow: 0 0 20px var(--color-primary-glow);
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
 
 * {
     box-sizing: border-box;
@@ -43,11 +54,12 @@
 }
 
 body {
-    font-family: 'Outfit', sans-serif;
-    background-color: var(--color-bg-dark);
+    font-family: 'Space Grotesk', sans-serif;
+    background-color: var(--color-bg-light);
     color: var(--color-text-main);
-    line-height: 1.5;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
 }
 
@@ -61,6 +73,7 @@ button {
     border: none;
     background: none;
     font-family: inherit;
+    transition: all 0.2s ease-in-out;
 }
 
 /* Utilities */
@@ -70,42 +83,45 @@ button {
     padding: 0 var(--spacing-md);
 }
 
+/* Reusable Button Styles */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem 2rem;
+    padding: 0.75rem 1.5rem;
     border-radius: var(--radius-full);
-    font-weight: 600;
-    font-size: 1rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease-in-out;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    background-color: var(--color-text-main);
     color: white;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+    background-color: #000000;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
-.btn-glass {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
+.btn-secondary {
+    background-color: white;
+    color: var(--color-text-main);
+    border: 1px solid #e5e7eb;
 }
 
-.btn-glass:hover {
-    background: rgba(255, 255, 255, 0.2);
+.btn-secondary:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
 }
 
+/* Replacing the old neon glass-panel with a clean white card */
 .glass-panel {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
 }

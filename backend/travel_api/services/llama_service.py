@@ -47,11 +47,15 @@ class LLaMAService:
              # Create a highly explicit, unique string for the embedding model
              query_text = f"Duration: {duration} Days | Start Location: {start_loc} | Group: {group} | Style: {trip_type}"
         else:
+             import re
              query_text = user_preferences
              text_lower = query_text.lower()
              
              # Fallback DEFAULTS so raw chat inputs do not crash the prompt variables
-             duration = str(5)
+             # Extract duration dynamically using regex
+             duration_match = re.search(r'(\d+)\s*days?', text_lower)
+             duration = str(duration_match.group(1)) if duration_match else str(5)
+             
              start_loc = "Sri Lanka"
              group = "Traveler"
              trip_type = "Sightseeing"
@@ -67,7 +71,8 @@ class LLaMAService:
         if query_embedding:
             cached_itinerary = self.store.find_similar(query_text, query_embedding)
             if cached_itinerary:
-                return cached_itinerary
+                print("⚠️ Found Cache, but BYPASSING to force 7-day LLaMA regeneration.")
+                # return cached_itinerary
 
         # 2. Cache Miss - Prompt Construction
         system_prompt = f"You are an expert Sri Lanka Travel Agent. Generate a highly detailed, unique travel itinerary. You MUST generate the complete itinerary for the full {duration} days requested. DO NOT STOP EARLY."
@@ -91,13 +96,23 @@ class LLaMAService:
                 ],
                 "suggested_restaurants": ["Name of a real restaurant in this city", "Another real restaurant"],
                 "narrative": "Write a full descriptive paragraph about the day's experiences."
+            }},
+            {{
+                "day": 2,
+                "location": "Next City",
+                "theme": "Day theme",
+                "activities": [
+                    {{"time": "Morning", "activity": "Specific Activity Name", "description": "Details..."}}
+                ],
+                "suggested_restaurants": ["Restaurant 1"],
+                "narrative": "Paragraph..."
             }}
           ]
         }}
         
         IMPORTANT RULES:
         1. CRITICAL: Day 1 location MUST absolutely be "{start_loc}". Do not start the trip anywhere else.
-        2. CRITICAL: You MUST generate EXACTLY {duration} objects in the "days" array (Day 1, Day 2, ..., Day {duration}). Do not stop early. Let the output be as long as necessary.
+        2. CRITICAL: You MUST generate EXACTLY {duration} objects in the "days" array (Day 1, Day 2, ..., Day {duration}). You must continue extending the array until you reach {duration} days!
         3. Replace ALL placeholder text with real, factual Sri Lankan locations, activities, and restaurant names relevant to a "{trip_type}" style trip.
         4. Maintain strict JSON formatting. DO NOT include code comments in the output JSON.
         """
@@ -111,7 +126,7 @@ class LLaMAService:
             ],
             "stream": False,
             "format": "json",
-            "options": {"temperature": 0.4, "num_ctx": 8192, "num_predict": -1} # Increased context and removed token limit
+            "options": {"temperature": 0.4, "num_ctx": 8192, "num_predict": 4096} # Forced high generation output limit
         }
 
         try:

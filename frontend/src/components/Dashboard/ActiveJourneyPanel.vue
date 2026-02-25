@@ -129,78 +129,84 @@ const askAssistant = async (query) => {
 </script>
 
 <template>
-  <div class="active-panel glass-panel">
+  <div class="active-panel">
     <div class="header">
       <div class="live-indicator">
         <span class="pulse-dot"></span> LIVE
       </div>
       <div class="header-actions">
         <span class="time">{{ currentTime }}</span>
-        <button v-if="authStore.token && !saveSuccess" class="btn btn-sm btn-primary save-btn" @click="saveTrip" :disabled="isSaving">
-          {{ isSaving ? 'Saving...' : '💾 Save Trip' }}
-        </button>
-        <button v-if="saveSuccess" class="btn btn-sm save-btn success-btn" disabled>
-          ✅ Saved
-        </button>
       </div>
     </div>
 
+    <!-- Active Itinerary State -->
     <div class="current-activity" v-if="!isTripFinished">
-      <h3>Day {{ currentDayIndex + 1 }} In {{ currentDay?.location || "Sri Lanka" }}</h3>
+      <h3 class="section-label">Day {{ currentDayIndex + 1 }} In {{ currentDay?.location || "Sri Lanka" }}</h3>
       <div class="activity-card" :class="{'checked-in-state': activityStatus === 'checked-in'}">
-        <span class="icon">📍</span>
-        <div class="details">
-          <h4>{{ currentActivity?.activity }}</h4>
-          <span class="time-range">{{ currentActivity?.time }}</span>
+        <div class="activity-header">
+           <span class="activity-icon">📍</span>
+           <div class="details">
+             <h4>{{ currentActivity?.activity }}</h4>
+             <span class="time-range">{{ currentActivity?.time }}</span>
+           </div>
         </div>
         
-        <button 
-            v-if="activityStatus === 'pending'" 
-            class="btn btn-primary sm" 
-            @click="handleCheckIn"
-        >
-            Check In
-        </button>
-        <button 
-            v-else-if="activityStatus === 'checked-in'" 
-            class="btn sm check-out-btn" 
-            @click="handleComplete"
-        >
-            Complete & Next
-        </button>
+        <div class="action-row">
+            <button 
+                v-if="activityStatus === 'pending'" 
+                class="btn btn-primary btn-full" 
+                @click="handleCheckIn"
+            >
+                Check In
+            </button>
+            <button 
+                v-else-if="activityStatus === 'checked-in'" 
+                class="btn btn-secondary check-out-btn btn-full" 
+                @click="handleComplete"
+            >
+                Complete & Next
+            </button>
+        </div>
       </div>
     </div>
     
+    <!-- Trip Finished State -->
     <div class="current-activity" v-else>
       <div class="activity-card success-card">
         <span class="icon">🎉</span>
-        <div class="details">
+        <div class="details center-details">
           <h4>Trip Completed!</h4>
           <span class="time-range">You have finished all activities.</span>
         </div>
       </div>
     </div>
 
+    <!-- Virtual Assistant Chat Block -->
     <div class="assistant-section">
-      <h3>Real-Time Assistant</h3>
-      <div class="quick-actions">
-        <button class="chip" @click="askAssistant('How is the weather right now?')">
-            ☁️ Check Weather
-        </button>
-        <button class="chip" @click="askAssistant('Is it crowded?')">
-            👥 Crowd Status
-        </button>
-        <button class="chip" @click="askAssistant('Where can I eat nearby?')">
-            🍽️ Food Nearby
-        </button>
-      </div>
+      <h3 class="section-label">AI Concierge</h3>
       
-      <div v-if="isLoadingAdvice" class="advice-box loading">
-        Thinking...
-      </div>
-      <div v-if="assistantResponse" class="advice-box">
-        <span class="ai-icon">✨</span>
-        <p>{{ assistantResponse }}</p>
+      <div class="chat-container">
+          <!-- Suggestion Chips -->
+          <div class="quick-actions">
+            <button class="chip" @click="askAssistant('How is the weather right now?')">
+                ☁️ Check Weather
+            </button>
+            <button class="chip" @click="askAssistant('Is it crowded?')">
+                👥 Crowd Status
+            </button>
+            <button class="chip" @click="askAssistant('Where can I eat nearby?')">
+                🍽️ Food Nearby
+            </button>
+          </div>
+          
+          <!-- AI Response Bubble -->
+          <div v-if="isLoadingAdvice" class="chat-bubble ai-bubble loading-bubble">
+             Thinking...
+          </div>
+          <div v-if="assistantResponse" class="chat-bubble ai-bubble flex-bubble">
+            <span class="top-icon">✨</span>
+            <p>{{ assistantResponse }}</p>
+          </div>
       </div>
     </div>
   </div>
@@ -208,197 +214,205 @@ const askAssistant = async (query) => {
 
 <style scoped>
 .active-panel {
-  padding: 2rem;
+  padding: 2.5rem;
   height: 100%;
   display: flex;
   flex-direction: column;
-  color: white;
+  background-color: var(--color-bg-card); /* Pure white background */
+  border-right: 1px solid var(--color-border);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding-bottom: 1rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .live-indicator {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #ef4444; /* Red for LIVE */
-  font-weight: 800;
+  color: #ef4444;
+  font-weight: 700;
   letter-spacing: 0.05em;
+  font-size: 0.9rem;
 }
 
 .pulse-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   background: #ef4444;
   border-radius: 50%;
-  box-shadow: 0 0 10px #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
   animation: pulse 1.5s infinite;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.save-btn {
-  font-size: 0.85rem;
-  padding: 0.4rem 0.8rem;
-  background: rgba(139, 92, 246, 0.2);
-  border: 1px solid var(--color-primary);
-  color: white;
-}
-
-.save-btn:hover:not(:disabled) {
-  background: var(--color-primary);
-}
-
-.success-btn {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: #10b981;
-  color: #10b981;
-}
-
 .time {
-  font-family: monospace;
-  font-size: 1.2rem;
-  color: var(--color-primary-light);
+  font-family: 'Space Grotesk', monospace;
+  font-size: 1.1rem;
+  color: var(--color-text-main);
+  font-weight: 600;
+}
+
+.section-label {
+  margin-bottom: 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
 }
 
 .current-activity {
   margin-bottom: 3rem;
 }
 
-.current-activity h3 {
-  margin-bottom: 1rem;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
 .activity-card {
-  background: rgba(255,255,255,0.1);
+  background: var(--color-bg-light); /* Soft off-white */
+  border: 1px solid var(--color-border);
   padding: 1.5rem;
   border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  border: 1px solid var(--color-primary);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
 }
 
-.icon {
-  font-size: 2rem;
+.activity-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.activity-icon {
+  font-size: 1.5rem;
 }
 
 .details {
   flex: 1;
 }
 
+.center-details {
+    text-align: center;
+}
+
 .details h4 {
-  font-size: 1.4rem;
-  margin-bottom: 0.2rem;
+  font-size: 1.2rem;
+  color: var(--color-text-main);
+  margin-bottom: 0.1rem;
+  font-weight: 700;
 }
 
 .time-range {
   color: var(--color-text-muted);
-}
-
-.sm {
-  padding: 0.5rem 1rem;
   font-size: 0.9rem;
 }
 
+.btn-full {
+    width: 100%;
+}
+
 .checked-in-state {
-  border-color: #10b981; /* Emerald green */
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+  border-color: var(--color-accent);
+  background: rgba(16, 185, 129, 0.05); /* Very pale green */
 }
 
 .check-out-btn {
-  background: rgba(16, 185, 129, 0.2);
-  color: #10b981;
-  border: 1px solid #10b981;
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .check-out-btn:hover {
-  background: #10b981;
+  background: var(--color-accent);
   color: white;
 }
 
 .success-card {
-  border-color: #f59e0b; /* Amber */
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
-  justify-content: center;
-  text-align: center;
+  border-color: var(--color-accent);
+  background: rgba(16, 185, 129, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
 }
 
-.success-card .details {
-  flex: none;
+/* AI Concierge Chat UI */
+.assistant-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Assistant */
-.assistant-section h3 {
-  margin-bottom: 1rem;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .quick-actions {
   display: flex;
-  gap: 0.5rem;
   flex-wrap: wrap;
-  margin-bottom: 1.5rem;
+  gap: 0.5rem;
 }
 
 .chip {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: white;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-main);
   padding: 0.5rem 1rem;
-  border-radius: 99px;
-  font-size: 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 500;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .chip:hover {
-  background: rgba(255,255,255,0.15);
-  border-color: var(--color-primary);
+  background: var(--color-border);
+  transform: translateY(-1px);
 }
 
-.advice-box {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
-  border: 1px solid var(--color-primary-glow);
-  padding: 1rem;
-  border-radius: var(--radius-md);
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
+/* Chat Bubbles */
+.chat-bubble {
+    padding: 1.2rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    max-width: 90%;
+    box-shadow: var(--shadow-sm);
 }
 
-.ai-icon {
-  font-size: 1.2rem;
+.ai-bubble {
+    background-color: var(--color-primary-light);
+    color: var(--color-text-main);
+    border-bottom-left-radius: 4px; /* classic chat bubble hook */
+    align-self: flex-start;
 }
 
-.loading {
-  color: var(--color-text-muted);
-  font-style: italic;
-  padding: 1rem;
-  text-align: center;
+.loading-bubble {
+    color: var(--color-text-muted);
+    font-style: italic;
+    background-color: var(--color-bg-light);
+}
+
+.flex-bubble {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.top-icon {
+    font-size: 1.1rem;
+    margin-top: 0.1rem;
 }
 
 @keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
 }
 </style>

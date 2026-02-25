@@ -57,8 +57,8 @@ const logout = () => {
 
 <template>
   <div class="profile-wrapper">
-    <!-- Navbar -->
-    <nav class="nav-header glass-panel">
+    <!-- Clean Minimal Navbar -->
+    <nav class="nav-header">
       <div class="logo">Travel.ai</div>
       <div class="nav-links">
         <router-link to="/">Home</router-link>
@@ -66,22 +66,22 @@ const logout = () => {
       </div>
       <div v-if="authStore.user" class="user-controls">
         <span class="email-badge">{{ authStore.user.email }}</span>
-        <button class="btn btn-primary sm" @click="logout">Logout</button>
+        <button class="btn btn-secondary sm" @click="logout">Logout</button>
       </div>
     </nav>
 
     <!-- Main Content -->
     <div class="profile-content">
       <div class="header-section">
-        <h1>My Saved Trips</h1>
-        <p class="subtitle">Access your AI-generated travel plans</p>
+        <h1>My Travel Portfolio</h1>
+        <p class="subtitle">Access your AI-generated travel plans and saved itineraries.</p>
       </div>
 
       <div v-if="isLoading" class="loading">
         Loading your trips...
       </div>
       
-      <div v-else-if="trips.length === 0" class="empty-state glass-panel">
+      <div v-else-if="trips.length === 0" class="empty-state">
         <span class="icon">🌴</span>
         <h3>No trips saved yet!</h3>
         <p>Head over to the Planner and build your first AI itinerary.</p>
@@ -89,7 +89,7 @@ const logout = () => {
       </div>
 
       <div v-else class="trips-grid">
-        <div v-for="trip in trips" :key="trip.id" class="trip-card glass-panel">
+        <div v-for="trip in trips" :key="trip.id" class="trip-card">
           <div class="card-header">
             <h3>{{ trip.title }}</h3>
             <span class="date">{{ new Date(trip.created_at).toLocaleDateString() }}</span>
@@ -97,15 +97,15 @@ const logout = () => {
           
           <div class="card-body">
             <p v-if="trip.itinerary_json && trip.itinerary_json.days">
-              {{ trip.itinerary_json.days.length }} Days • 
-              {{ trip.itinerary_json.budget || 'Standard' }} Budget
+              <span class="tag">{{ trip.itinerary_json.days.length }} Days</span>
+              <span class="tag">{{ trip.itinerary_json.budget || 'Standard' }}</span>
             </p>
             <p v-else>Custom Trip</p>
           </div>
 
           <div class="card-footer">
-            <button class="btn view-btn sm" @click="loadTrip(trip.itinerary_json)">View Details</button>
-            <button class="btn sm delete-btn" @click="deleteTrip(trip.id)">Delete</button>
+            <button class="btn btn-primary view-btn sm" @click="loadTrip(trip.itinerary_json)">View Trip</button>
+            <button class="btn sm delete-btn" @click="deleteTrip(trip.id)">Remove</button>
           </div>
         </div>
       </div>
@@ -116,11 +116,7 @@ const logout = () => {
 <style scoped>
 .profile-wrapper {
   min-height: 100vh;
-  background-color: var(--color-bg-dark);
-  background-image: 
-    radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15), transparent 25%);
-  color: white;
+  background-color: var(--color-bg-light);
   display: flex;
   flex-direction: column;
 }
@@ -130,32 +126,33 @@ const logout = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background-color: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .logo {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 800;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
+  letter-spacing: -0.03em;
+  color: var(--color-text-main);
 }
 
 .nav-links {
   display: flex;
-  gap: 2rem;
+  gap: 2.5rem;
 }
 
 .nav-links a {
   font-weight: 500;
   font-size: 0.95rem;
-  opacity: 0.8;
-  transition: opacity 0.2s;
-  color: white;
-  text-decoration: none;
+  color: var(--color-text-muted);
+  transition: color 0.2s;
 }
 
 .nav-links a:hover, .nav-links a.router-link-active {
-  opacity: 1;
-  color: var(--color-primary-light);
+  color: var(--color-text-main);
 }
 
 .user-controls {
@@ -165,10 +162,18 @@ const logout = () => {
 }
 
 .email-badge {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 0.4rem 1rem;
-  border-radius: 99px;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  padding: 0.4rem 1.2rem;
+  border-radius: var(--radius-full);
   font-size: 0.85rem;
+  color: var(--color-text-main);
+  font-weight: 500;
+}
+
+.sm {
+    padding: 0.5rem 1.2rem;
+    font-size: 0.9rem;
 }
 
 .profile-content {
@@ -184,9 +189,10 @@ const logout = () => {
 }
 
 .header-section h1 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   margin-bottom: 0.5rem;
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
@@ -204,8 +210,11 @@ const logout = () => {
 
 .empty-state {
   text-align: center;
-  padding: 5rem 2rem;
+  padding: 6rem 2rem;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -214,12 +223,13 @@ const logout = () => {
 
 .empty-state .icon {
   font-size: 4rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .empty-state h3 {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   margin-bottom: 0.5rem;
+  color: var(--color-text-main);
 }
 
 .empty-state p {
@@ -236,23 +246,26 @@ const logout = () => {
 
 .trips-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 2rem;
 }
 
+/* White Theme Cards */
 .trip-card {
-  padding: 1.5rem;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255,255,255,0.05);
+  padding: 2rem;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow-sm);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .trip-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.15);
-  border-color: rgba(139, 92, 246, 0.3);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: #e5e7eb;
 }
 
 .card-header {
@@ -260,21 +273,32 @@ const logout = () => {
 }
 
 .card-header h3 {
-  font-size: 1.25rem;
-  margin-bottom: 0.25rem;
-  color: white;
+  font-size: 1.4rem;
+  margin-bottom: 0.35rem;
+  color: var(--color-text-main);
+  letter-spacing: -0.01em;
 }
 
 .date {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--color-text-muted);
 }
 
 .card-body {
   flex: 1;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 1.5rem;
+  color: var(--color-text-muted);
+  margin-bottom: 2rem;
   font-size: 0.95rem;
+}
+
+.tag {
+    background: var(--color-bg-light);
+    border: 1px solid var(--color-border);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    color: var(--color-text-main);
+    margin-right: 0.5rem;
 }
 
 .card-footer {
@@ -282,31 +306,16 @@ const logout = () => {
   justify-content: space-between;
   align-items: center;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(255,255,255,0.1);
-}
-
-.view-btn {
-  background: rgba(139, 92, 246, 0.15);
-  color: #c4b5fd;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  transition: all 0.2s ease;
-}
-
-.view-btn:hover {
-  background: rgba(139, 92, 246, 0.3);
-  color: white;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.5);
+  border-top: 1px solid var(--color-border);
 }
 
 .delete-btn {
-  background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
-  border: 1px solid transparent;
+  font-weight: 500;
 }
 
 .delete-btn:hover {
-  background: #ef4444;
-  color: white;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-full);
 }
 </style>

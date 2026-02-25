@@ -45,13 +45,13 @@ const handlePlanClick = () => {
         <a href="#">Stays</a>
         <a href="#">Flights</a>
       </div>
-      <button v-if="!authStore.token" class="btn-glass sm" @click="authStore.toggleAuthModal(true)">Login</button>
-      <router-link v-else to="/profile" class="btn-glass sm">My Profile</router-link>
+      <button v-if="!authStore.token" class="btn btn-secondary sm" @click="authStore.toggleAuthModal(true)">Login</button>
+      <router-link v-else to="/profile" class="btn btn-primary sm">My Profile</router-link>
     </nav>
 
-    <!-- Scenic Background with Overlay -->
+    <!-- Scenic Background with Overlay (Lighter for white theme) -->
     <div class="bg-layer">
-      <!-- High-res Sri Lanka Image (Sigiriya/Nature vibe) -->
+      <!-- High-res Sri Lanka Image -->
       <img 
         src="https://images.pexels.com/photos/2403209/pexels-photo-2403209.jpeg" 
         alt="Sri Lanka Scenery" 
@@ -59,39 +59,6 @@ const handlePlanClick = () => {
         :style="{ transform: `scale(1.1) translate(${mouseX * -10}px, ${mouseY * -10}px)` }"
       />
       <div class="overlay-gradient"></div>
-    </div>
-
-    <!-- Floating 3D Elements (Parallax) -->
-    <div class="floating-elements">
-      <!-- Element 1: Glass Card Top Right -->
-      <div 
-        class="float-card card-1 glass-panel"
-        :style="{ transform: `translate(${mouseX * 30}px, ${mouseY * 30}px) rotate(${mouseX * 5}deg)` }"
-      >
-        <span class="icon">🌿</span>
-        <div class="meta">
-          <strong>98 Acres Resort</strong>
-          <small>Ella, Sri Lanka</small>
-        </div>
-      </div>
-
-      <!-- Element 2: Glass Card Bottom Left -->
-      <div 
-        class="float-card card-2 glass-panel"
-        :style="{ transform: `translate(${mouseX * -40}px, ${mouseY * -20}px) rotate(${mouseY * -5}deg)` }"
-      >
-        <span class="icon">🐆</span>
-        <div class="meta">
-          <strong>Yala Safari</strong>
-          <small>Wildlife Tour</small>
-        </div>
-      </div>
-      
-      <!-- Element 3: Abstract Shape blur -->
-      <div 
-        class="blur-shape shape-1"
-        :style="{ transform: `translate(${mouseX * 60}px, ${mouseY * 60}px)` }"
-      ></div>
     </div>
 
     <!-- Central Hero Content -->
@@ -102,7 +69,7 @@ const handlePlanClick = () => {
       </h1>
       
       <!-- Layla-style Input Trigger -->
-      <div class="search-container glass-panel" @click="handlePlanClick">
+      <div class="search-container" @click="handlePlanClick">
         <div class="input-fake">
           <span class="search-icon">✨</span>
           <span class="placeholder-text">Tell me your dream trip style & budget...</span>
@@ -131,7 +98,7 @@ const handlePlanClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--color-text-main);
 }
 
 /* Background */
@@ -152,13 +119,14 @@ const handlePlanClick = () => {
   transition: transform 0.1s ease-out; /* Smooth parallax */
 }
 
+/* Changed from dark gradient to a soft white/light overlay for better text contrast of the Layla brand */
 .overlay-gradient {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6));
+  background: linear-gradient(to bottom, rgba(255,255,255,0.7), rgba(255,255,255,0.95));
   z-index: 1;
 }
 
@@ -168,7 +136,7 @@ const handlePlanClick = () => {
   top: 0;
   left: 0;
   width: 100%;
-  padding: 2rem 4rem;
+  padding: 1.5rem 4rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -176,38 +144,36 @@ const handlePlanClick = () => {
 }
 
 .logo {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 800;
   font-size: 1.8rem;
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  letter-spacing: -0.03em;
+  color: var(--color-text-main);
 }
 
 .nav-links {
   display: flex;
-  gap: 2rem;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 0.75rem 2rem;
-  border-radius: 99px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.1);
+  gap: 2.5rem;
 }
 
 .nav-links a {
   font-weight: 500;
   font-size: 0.95rem;
-  opacity: 0.9;
-  transition: opacity 0.2s;
+  color: var(--color-text-main);
+  transition: color 0.2s;
 }
 
 .nav-links a:hover {
-  opacity: 1;
+  color: var(--color-primary);
 }
 
 .sm {
   padding: 0.6rem 1.5rem;
   font-size: 0.9rem;
   border-radius: 99px;
+  background-color: white;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Hero Center */
@@ -215,23 +181,22 @@ const handlePlanClick = () => {
   position: relative;
   z-index: 20;
   text-align: center;
-  max-width: 800px;
+  max-width: 900px;
   padding: 0 1rem;
 }
 
 .hero-title {
-  font-family: 'Outfit', sans-serif;
   font-size: 4.5rem;
   line-height: 1.1;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 2.5rem;
-  text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
 }
 
 .text-highlight {
-  color: #fbbf24; /* Amber/Gold for Sri Lanka vibe */
+  color: var(--color-primary); 
   font-style: italic;
-  font-family: serif; /* Elegant contrast */
 }
 
 .subtitle-text {
@@ -239,7 +204,7 @@ const handlePlanClick = () => {
   font-size: 1.5rem;
   font-weight: 400;
   margin-top: 0.5rem;
-  opacity: 0.9;
+  color: var(--color-text-muted);
 }
 
 /* Search Container (Layla Style) */
@@ -247,19 +212,20 @@ const handlePlanClick = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--color-bg-card);
   padding: 0.5rem;
-  border-radius: 1.5rem; /* Pill shape */
-  margin: 0 auto 2rem auto;
+  border-radius: var(--radius-full);
+  margin: 0 auto 2.5rem auto;
   max-width: 700px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-lg);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--color-border);
 }
 
 .search-container:hover {
   transform: translateY(-2px);
-  box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.1);
 }
 
 .input-fake {
@@ -267,7 +233,7 @@ const handlePlanClick = () => {
   align-items: center;
   gap: 1rem;
   padding-left: 1.5rem;
-  color: #4b5563;
+  color: var(--color-text-muted);
   font-size: 1.1rem;
   flex: 1;
 }
@@ -277,17 +243,18 @@ const handlePlanClick = () => {
 }
 
 .action-btn {
-  background: var(--color-bg-dark); /* Black/Dark button */
+  background: var(--color-text-main); /* Black button */
   color: white;
   padding: 1rem 2rem;
-  border-radius: 1rem;
+  border-radius: var(--radius-full);
   font-weight: 600;
   font-size: 1rem;
-  transition: background 0.2s;
+  transition: transform 0.2s;
 }
 
 .action-btn:hover {
-  background: #333;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 /* Tags */
@@ -299,87 +266,14 @@ const handlePlanClick = () => {
 }
 
 .tag {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(5px);
+  background: var(--color-bg-card);
   padding: 0.5rem 1rem;
   border-radius: 99px;
   font-size: 0.9rem;
   font-weight: 500;
-  border: 1px solid rgba(255,255,255,0.1);
-  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-/* Floating Elements */
-.floating-elements {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 10;
-  pointer-events: none; /* Let clicks pass through */
-}
-
-.float-card {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  padding: 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-  transition: transform 0.1s ease-out; /* Match script update rate */
-}
-
-.card-1 {
-  top: 20%;
-  right: 15%;
-}
-
-.card-2 {
-  bottom: 25%;
-  left: 15%;
-}
-
-.icon {
-  font-size: 2rem;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-}
-
-.meta {
-  display: flex;
-  flex-direction: column;
-}
-
-.meta strong {
-  font-size: 0.95rem;
-  color: white;
-}
-
-.meta small {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.blur-shape {
-  position: absolute;
-  width: 300px;
-  height: 300px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.4), transparent 70%);
-  filter: blur(60px);
-  z-index: 0;
-  top: 50%;
-  left: 50%;
-  margin-top: -150px;
-  margin-left: -150px;
-  opacity: 0.6;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text-main);
 }
 
 /* Responsive */
@@ -393,14 +287,12 @@ const handlePlanClick = () => {
     padding: 1rem;
     gap: 1rem;
     align-items: stretch;
+    border-radius: var(--radius-lg);
   }
   
   .action-btn {
     width: 100%;
-  }
-  
-  .floating-elements {
-    display: none; /* Hide floating cards on mobile to avoid clutter */
+    border-radius: var(--radius-sm);
   }
 }
 </style>

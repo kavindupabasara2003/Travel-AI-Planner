@@ -46,43 +46,63 @@ const saveTrip = async () => {
   <div class="dashboard">
     <div v-if="!chatStore.itinerary" class="empty-state">
       <div class="empty-content glass-panel">
+          <div class="empty-icon">🗺️</div>
           <h2>Ready to Plan?</h2>
           <p>Chat with our AI agent to generate your dream personalized itinerary.</p>
       </div>
     </div>
     
     <div v-else class="itinerary-content">
-      <!-- Hero Header -->
+      <!-- Layla Style Hero Header -->
       <div class="trip-hero">
-        <div class="hero-bg"></div>
-        <div class="hero-overlay"></div>
-        <div class="hero-text">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
-              <div>
-                <h1>{{ chatStore.itinerary.title }}</h1>
-                <p>{{ chatStore.itinerary.summary }}</p>
-                <div class="hero-tags">
-                    <span class="tag">{{ chatStore.itinerary.total_days || chatStore.itinerary.days.length }} Days</span>
-                    <span class="tag">{{ getLocation(chatStore.itinerary) }}</span>
-                    <span class="tag">{{ chatStore.itinerary.trip_theme || 'Adventure' }}</span>
-                </div>
+        <div class="hero-image-wrapper">
+            <img class="hero-image" src="https://images.pexels.com/photos/2403209/pexels-photo-2403209.jpeg" alt="Trip Cover">
+        </div>
+        
+        <div class="hero-text-content">
+            <h1>{{ chatStore.itinerary.title }}</h1>
+            <p class="hero-summary">{{ chatStore.itinerary.summary }}</p>
+            
+            <div class="hero-stats">
+              <div class="stat-item">
+                  <span class="stat-icon">📅</span>
+                  <span>{{ chatStore.itinerary.total_days || chatStore.itinerary.days.length }} Days</span>
               </div>
-              <div v-if="authStore.token" class="save-action">
-                  <button v-if="!saveSuccess" class="btn btn-primary save-btn" @click="saveTrip" :disabled="isSaving">
-                    {{ isSaving ? 'Saving...' : '💾 Save Trip' }}
-                  </button>
-                  <button v-else class="btn save-btn success-btn" disabled>
-                    ✅ Saved to Profile
-                  </button>
+              <div class="stat-item">
+                  <span class="stat-icon">📍</span>
+                  <span>{{ getLocation(chatStore.itinerary) }}</span>
               </div>
+              <div class="stat-item">
+                  <span class="stat-icon">✨</span>
+                  <span>{{ chatStore.itinerary.trip_theme || 'Adventure' }}</span>
+              </div>
+            </div>
+            
+            <div v-if="authStore.token" class="save-action">
+                <button v-if="!saveSuccess" class="btn btn-primary" @click="saveTrip" :disabled="isSaving">
+                  {{ isSaving ? 'Saving...' : '💾 Save Trip to Profile' }}
+                </button>
+                <button v-else class="btn btn-secondary success-btn" disabled>
+                  ✅ Saved Successfully
+                </button>
             </div>
         </div>
       </div>
       
       <!-- Timeline Container -->
       <div class="timeline-container">
+        <!-- Vertical Gray Line -->
         <div class="timeline-line"></div>
         
+        <!-- Starter Node -->
+        <div class="timeline-start-node">
+            <div class="node-icon">🛫</div>
+            <div class="node-text">
+                <span class="node-title">Arrival</span>
+                <span class="node-sub">Airport Transfer</span>
+            </div>
+        </div>
+
         <div class="days-list">
             <ItineraryCard 
             v-for="day in chatStore.itinerary.days" 
@@ -101,8 +121,10 @@ const saveTrip = async () => {
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
+  background-color: var(--color-bg-light); /* Enforce the pastel white base */
 }
 
+/* Empty State */
 .empty-state {
   height: 100%;
   display: flex;
@@ -113,140 +135,171 @@ const saveTrip = async () => {
 
 .empty-content {
     text-align: center;
-    padding: 3rem;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 2rem;
+    padding: 4rem 3rem;
+    max-width: 500px;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.empty-content h2 {
+    font-size: 1.8rem;
+    color: var(--color-text-main);
+    margin-bottom: 0.5rem;
+}
+
+.empty-content p {
     color: var(--color-text-muted);
 }
 
-/* Hero Section */
+/* Hero Section (Layla Style) */
 .trip-hero {
-    position: relative;
-    height: 300px;
-    width: 100%;
-    border-radius: 0 0 2rem 2rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 3rem;
+    padding: 3.5rem 4rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .trip-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 2rem;
+  }
+}
+
+.hero-image-wrapper {
+    flex-shrink: 0;
+    width: 320px;
+    height: 320px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    margin-bottom: 3rem;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-top: none;
+    box-shadow: var(--shadow-md);
 }
 
-.hero-bg {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-image: url('https://images.unsplash.com/photo-1586616016335-950c8290ae5f?q=80&w=2000&auto=format&fit=crop');
-    background-size: cover;
-    background-position: center;
-}
-
-.hero-overlay {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(10,10,15,0.9) 100%);
-}
-
-.hero-text {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    padding: 2.5rem;
+.hero-image {
     width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-.hero-text h1 {
-    font-size: 3rem;
-    font-weight: 800;
-    color: white;
-    margin-bottom: 0.5rem;
-    text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+.hero-text-content {
+    flex: 1;
+}
+
+.hero-text-content h1 {
+    font-size: 3.2rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+    line-height: 1.1;
+    margin-bottom: 1.2rem;
     letter-spacing: -0.02em;
 }
 
-.hero-text p {
-    color: rgba(255,255,255,0.9);
-    font-size: 1.1rem;
+.hero-summary {
+    color: var(--color-text-muted);
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
     max-width: 600px;
 }
 
-.hero-tags {
-    margin-top: 1rem;
+.hero-stats {
     display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-text-main);
 }
 
-.tag {
-    background: rgba(255,255,255,0.2);
-    backdrop-filter: blur(4px);
-    padding: 0.25rem 0.75rem;
-    border-radius: 99px;
-    font-size: 0.85rem;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.2);
+.stat-icon {
+    font-size: 1.2rem;
+    opacity: 0.8;
 }
 
-.save-action {
-  margin-bottom: 0.5rem;
-  margin-right: 1rem;
-}
-
-.save-btn {
-  font-size: 0.95rem;
-  padding: 0.6rem 1.2rem;
-  background: rgba(139, 92, 246, 0.2);
-  border: 1px solid var(--color-primary);
-  color: white;
-  backdrop-filter: blur(8px);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.save-btn:hover:not(:disabled) {
-  background: var(--color-primary);
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
-}
-
-.success-btn {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: #10b981;
-  color: #10b981;
+.save-action .success-btn {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
 }
 
 /* Timeline Layout */
 .timeline-container {
     position: relative;
-    padding: 0 2rem 4rem 2rem;
-    max-width: 800px;
+    padding: 0 4rem 6rem 4rem;
+    max-width: 1000px;
     margin: 0 auto;
 }
 
 .timeline-line {
     position: absolute;
-    left: 3.5rem; /* 2rem padding + 1.5rem (half of 3rem marker) */
-    transform: translateX(-50%); /* Center the 2px line */
-    top: 0;
+    left: 4.5rem; /* 4rem padding + 0.5rem offset */
+    top: 2rem;
     bottom: 0;
     width: 2px;
-    background: linear-gradient(180deg, #6366f1 0%, rgba(99, 102, 241, 0.1) 100%);
+    background-color: var(--color-border);
     z-index: 0;
+}
+
+.timeline-start-node {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 3rem;
+    position: relative;
+    z-index: 1;
+}
+
+.node-icon {
+    width: 3rem;
+    height: 3rem;
+    background: var(--color-text-main);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 0 0 6px var(--color-bg-light); /* Cut out background */
+    margin-left: -1rem; /* Adjusting to center on line */
+}
+
+.node-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.node-title {
+    font-weight: 600;
+    color: var(--color-text-main);
+}
+
+.node-sub {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
 }
 
 /* Scrollbar */
 .dashboard::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
+}
+.dashboard::-webkit-scrollbar-track {
+    background: transparent;
 }
 .dashboard::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-}
-
-.empty-content {
-    text-align: center;
-    padding: 3rem;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 2rem;
-    color: var(--color-text-muted);
+    background: #d1d5db;
+    border-radius: 4px;
 }
 </style>

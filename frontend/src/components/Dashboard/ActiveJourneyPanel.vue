@@ -68,7 +68,7 @@ const saveTrip = async () => {
     saveSuccess.value = false
     
     try {
-        await axios.post('http://127.0.0.1:8000/api/v1/trips/', {
+        await axios.post('/api/v1/trips/', {
             title: props.trip.title || "My Custom Itinerary",
             itinerary_json: props.trip
         }, {
@@ -97,10 +97,11 @@ const askAssistant = async (query) => {
              lat = 6.0535; lon = 80.2210; // Galle
         }
 
-        const response = await fetch('http://127.0.0.1:8000/api/v1/chat/', {
+        const response = await fetch('/api/v1/chat/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authStore.token}`
             },
             body: JSON.stringify({
                 location: currentDay.value?.location || "Sri Lanka",

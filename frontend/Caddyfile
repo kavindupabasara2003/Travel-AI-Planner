@@ -1,0 +1,23 @@
+# Caddyfile
+# This file configures Caddy to serve our static Vue assets and proxy /api requests to Django
+
+:80 {
+    # Reverse proxy API traffic to the backend Kubernetes service first
+    handle /api/* {
+        reverse_proxy travel-ai-backend-service:8000
+    }
+
+    # Handle static files and SPA routing
+    handle {
+        root * /srv
+        # Enable Vue Router HTML5 history mode (serves index.html for unknown paths)
+        try_files {path} {path}/ /index.html
+        file_server
+    }
+
+    # Enable logging for debugging
+    log {
+        output stdout
+        format console
+    }
+}

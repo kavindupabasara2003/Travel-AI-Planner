@@ -1,0 +1,42 @@
+# Default values for travel-ai.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount:
+  frontend: 2
+  backend: 2
+  postgres: 1
+
+image:
+  frontend:
+    repository: travel-ai-frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  backend:
+    repository: travel-ai-backend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  postgres:
+    repository: pgvector/pgvector
+    tag: "pg16"
+    pullPolicy: IfNotPresent
+
+postgresql:
+  database: "travel_ai_db"
+  username: "traveldb_user"
+  # Set SECRETS via helm upgrade --set for production, these are just base64 defaults for Minikube
+  base64user: "dHJhdmVsZGJfdXNlcg=="
+  base64password: "c2VjdXJlcGFzc3dvcmQxMjM="
+  base64db: "dHJhdmVsX2FpX2Ri"
+
+django:
+  base64secretkey: "ZGphbmdvLWluc2VjdXJlLXN1cGVyc2VjcmV0a2V5"
+  debug: "True"
+  allowed_hosts: "*"
+  ollama_host: "http://host.minikube.internal:11434"
+  
+ingress:
+  host: "travelai.local"
+
+frontendConfig:
+  apiBaseUrl: "http://localhost/api/v1"

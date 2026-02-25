@@ -18,7 +18,7 @@ onMounted(async () => {
     }
 
     try {
-        const response = await axios.get('http://127.0.0.1:8000/api/v1/trips/', {
+        const response = await axios.get('/api/v1/trips/', {
             headers: {
                 Authorization: `Bearer ${authStore.token}`
             }
@@ -33,7 +33,7 @@ onMounted(async () => {
 
 const deleteTrip = async (id) => {
     try {
-        await axios.delete(`http://127.0.0.1:8000/api/v1/trips/${id}/`, {
+        await axios.delete(`/api/v1/trips/${id}/`, {
             headers: {
                 Authorization: `Bearer ${authStore.token}`
             }

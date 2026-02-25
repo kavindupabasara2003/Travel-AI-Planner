@@ -28,7 +28,7 @@ export const useChatStore = defineStore('chat', {
                 }
 
                 // Send the structured object directly
-                const response = await axios.post('http://127.0.0.1:8000/api/v1/plan/',
+                const response = await axios.post('/api/v1/plan/',
                     { preferences: formData }, // Backend now expects this to be dict OR string
                     {
                         headers: {
@@ -91,7 +91,7 @@ export const useChatStore = defineStore('chat', {
                 // In a real app, we'd have a classifier or separate buttons.
                 // Let's assume standard "Generate Itinerary" flow for now.
 
-                const response = await axios.post('http://127.0.0.1:8000/api/v1/plan/',
+                const response = await axios.post('/api/v1/plan/',
                     { preferences: text },
                     {
                         headers: {

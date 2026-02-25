@@ -24,7 +24,7 @@ const saveTrip = async () => {
     saveSuccess.value = false
     
     try {
-        await axios.post('http://127.0.0.1:8000/api/v1/trips/', {
+        await axios.post('/api/v1/trips/', {
             title: chatStore.itinerary.title || "My Custom Itinerary",
             itinerary_json: chatStore.itinerary
         }, {

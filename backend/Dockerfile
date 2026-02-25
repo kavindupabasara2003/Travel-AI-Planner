@@ -27,4 +27,4 @@ COPY . /app/
 EXPOSE 8000
 
 # Run gunicorn (this command will be overridden by docker-compose for dev, but useful for prod)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "travel_ai_backend.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--timeout", "300", "travel_ai_backend.wsgi:application"]

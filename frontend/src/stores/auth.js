@@ -27,7 +27,7 @@ export const useAuthStore = defineStore('auth', {
         async signInWithEmail(email, password) {
             this.loading = true;
             try {
-                const response = await axios.post('http://127.0.0.1:8000/api/v1/token/', {
+                const response = await axios.post('/api/v1/token/', {
                     username: email,
                     password: password
                 });
@@ -53,7 +53,7 @@ export const useAuthStore = defineStore('auth', {
         async signUpWithEmail(email, password) {
             this.loading = true;
             try {
-                await axios.post('http://127.0.0.1:8000/api/v1/register/', {
+                await axios.post('/api/v1/register/', {
                     email: email,
                     password: password
                 });

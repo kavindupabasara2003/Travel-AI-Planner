@@ -11,8 +11,9 @@ from .itinerary_store import ItineraryStore
 class LLaMAService:
     def __init__(self):
         # Ollama Configuration
-        self.ollama_url = "http://localhost:11434/api/chat"
-        self.embedding_url = "http://localhost:11434/api/embeddings"
+        ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+        self.ollama_url = f"{ollama_host}/api/chat"
+        self.embedding_url = f"{ollama_host}/api/embeddings"
         self.model = "srilanka-llama" 
         self.fallback_model = "llama3.2"
         self.embedding_model = "nomic-embed-text"

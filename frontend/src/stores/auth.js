@@ -34,14 +34,19 @@ export const useAuthStore = defineStore('auth', {
 
                 this.token = response.data.access;
                 this.refreshToken = response.data.refresh;
-                this.user = { email: email };
+                this.user = { email: email, is_admin: response.data.is_admin };
 
                 localStorage.setItem('access_token', this.token);
                 localStorage.setItem('refresh_token', this.refreshToken);
                 localStorage.setItem('user_data', JSON.stringify(this.user));
 
                 this.authModalOpen = false;
-                await router.push('/planner');
+
+                if (this.user.is_admin) {
+                    await router.push('/admin');
+                } else {
+                    await router.push('/planner');
+                }
             } catch (error) {
                 alert("Login Failed: Please check your credentials.");
                 console.error(error);

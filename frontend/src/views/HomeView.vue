@@ -44,6 +44,7 @@ const handlePlanClick = () => {
         <a href="#">Destinations</a>
         <a href="#">Stays</a>
         <a href="#">Flights</a>
+        <router-link v-if="authStore.user?.is_admin" to="/admin" class="admin-link">Admin Dashboard</router-link>
       </div>
       <button v-if="!authStore.token" class="btn btn-secondary sm" @click="authStore.toggleAuthModal(true)">Login</button>
       <router-link v-else to="/profile" class="btn btn-primary sm">My Profile</router-link>

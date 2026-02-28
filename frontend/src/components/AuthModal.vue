@@ -34,6 +34,13 @@ const handleSubmit = async () => {
     errorMsg.value = e.message
   }
 }
+
+const adminLogin = async () => {
+  email.value = 'admin@gmail.com'
+  password.value = 'kav1'
+  isLogin.value = true
+  await handleSubmit()
+}
 </script>
 
 <template>
@@ -66,6 +73,14 @@ const handleSubmit = async () => {
         {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
         <a href="#" @click.prevent="toggleMode">{{ isLogin ? 'Sign Up' : 'Login' }}</a>
       </p>
+      
+      <div class="admin-divider">
+        <span>OR</span>
+      </div>
+      
+      <button class="btn btn-secondary full-width admin-btn" @click="adminLogin" :disabled="authStore.loading">
+        🔑 Login as Administrator
+      </button>
     </div>
   </div>
 </template>
@@ -88,33 +103,41 @@ const handleSubmit = async () => {
 .modal-content {
   width: 100%;
   max-width: 400px;
-  padding: 2rem;
+  padding: 2.5rem;
   position: relative;
-  background: rgba(20, 30, 46, 0.9); /* Darker opacity for readability */
+  background: var(--color-bg-card);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  color: var(--color-text-main);
 }
 
 .close-btn {
   position: absolute;
   top: 1rem;
-  right: 1rem;
-  font-size: 1.5rem;
+  right: 1.5rem;
+  font-size: 1.8rem;
   color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .close-btn:hover {
-  color: white;
+  color: var(--color-text-main);
 }
 
 h2 {
   text-align: center;
   margin-bottom: 0.5rem;
+  font-weight: 700;
+  color: var(--color-text-main);
 }
 
 .subtitle {
   text-align: center;
   color: var(--color-text-muted);
   margin-bottom: 2rem;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .form-group {
@@ -125,39 +148,50 @@ label {
   display: block;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
-  color: var(--color-text-muted);
+  font-weight: 500;
+  color: var(--color-text-main);
 }
 
 input {
   width: 100%;
-  padding: 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
-  color: white;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-light);
+  color: var(--color-text-main);
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 input:focus {
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .full-width {
   width: 100%;
   padding: 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .switch-mode {
   margin-top: 1.5rem;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--color-text-muted);
 }
 
 .switch-mode a {
-  color: var(--color-primary-light);
+  color: var(--color-primary);
   font-weight: 600;
+  margin-left: 0.3rem;
+  text-decoration: none;
+}
+
+.switch-mode a:hover {
+  text-decoration: underline;
 }
 
 .error {
@@ -165,5 +199,43 @@ input:focus {
   margin-bottom: 1rem;
   text-align: center;
   font-size: 0.9rem;
+  background: #fef2f2;
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+.admin-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: var(--color-text-muted);
+}
+
+.admin-divider::before,
+.admin-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-divider span {
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.admin-btn {
+  background-color: var(--color-bg-light);
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  transition: all 0.2s;
+}
+
+.admin-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
 }
 </style>

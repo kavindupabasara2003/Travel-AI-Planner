@@ -63,6 +63,7 @@ const logout = () => {
       <div class="nav-links">
         <router-link to="/">Home</router-link>
         <router-link to="/planner">Planner</router-link>
+        <router-link v-if="authStore.user?.is_admin" to="/admin" class="admin-link">Admin Dashboard</router-link>
       </div>
       <div v-if="authStore.user" class="user-controls">
         <span class="email-badge">{{ authStore.user.email }}</span>

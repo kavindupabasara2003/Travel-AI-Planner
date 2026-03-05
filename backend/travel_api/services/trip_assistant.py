@@ -2,6 +2,7 @@ import os
 import requests
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from .llama_service import LLaMAService
 
 class TripAssistantService:
@@ -10,7 +11,7 @@ class TripAssistantService:
         self.weather_api_url = "https://api.open-meteo.com/v1/forecast"
         
         # Determine current year and load correct holiday file
-        current_year = datetime.now().year
+        current_year = datetime.now(ZoneInfo("Asia/Colombo")).year
         self.holidays_file = os.path.join(
             os.path.dirname(__file__), 
             f"srilanka_holidays/json/{current_year}.json"
@@ -75,7 +76,7 @@ class TripAssistantService:
         """
         Generate advice based on User Query + Real-time Context (Weather + Holidays) + Current Activity.
         """
-        current_time = datetime.now()
+        current_time = datetime.now(ZoneInfo("Asia/Colombo"))
         date_str = current_time.strftime("%Y-%m-%d")
         day_of_week = current_time.strftime("%A")
         time_str = current_time.strftime("%I:%M %p")

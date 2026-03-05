@@ -115,6 +115,7 @@ class LLaMAService:
         2. CRITICAL: You MUST generate EXACTLY {duration} objects in the "days" array (Day 1, Day 2, ..., Day {duration}). You must continue extending the array until you reach {duration} days!
         3. Replace ALL placeholder text with real, factual Sri Lankan locations, activities, and restaurant names relevant to a "{trip_type}" style trip.
         4. Maintain strict JSON formatting. DO NOT include code comments in the output JSON.
+        5. CRITICAL: ENSURE GEOGRAPHIC PROGRESSION. You MUST NOT stay in the exact same city for more than 2 or 3 days. The user must travel to multiple distinct regions of Sri Lanka (e.g., South Coast, Cultural Triangle, Hill Country) as the itinerary progresses.
         """
 
         # 3. LLaMA Generation

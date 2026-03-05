@@ -120,7 +120,7 @@ class LLaMAService:
 
         # 3. LLaMA Generation
         payload = {
-            "model": self.model,
+            "model": self.fallback_model, # Use the much smarter base model for stable JSON structure
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
@@ -129,13 +129,40 @@ class LLaMAService:
             "format": "json",
             "options": {"temperature": 0.4, "num_ctx": 8192, "num_predict": 4096} # Forced high generation output limit
         }
-
+        
         try:
             print(f"🚀 Cache Miss. Generating with {payload['model']}...")
             response = requests.post(self.ollama_url, json=payload)
             response.raise_for_status()
             
-            content = response.json().get("message", {}).get("content", "").replace("```json", "").replace("```", "").strip()
+            raw_content = response.json().get("message", {}).get("content", "")
+            
+            # Robust extraction using bracket counting to find the FIRST complete JSON object
+            start_idx = raw_content.find('{')
+            if start_idx != -1:
+                open_braces = 0
+                end_idx = -1
+                for i in range(start_idx, len(raw_content)):
+                    if raw_content[i] == '{':
+                        open_braces += 1
+                    elif raw_content[i] == '}':
+                        open_braces -= 1
+                        if open_braces == 0:
+                            end_idx = i
+                            break
+                            
+                if end_idx != -1:
+                    content = raw_content[start_idx:end_idx+1]
+                else:
+                    content = raw_content
+            else:
+                content = raw_content
+                
+            content = content.replace("```json", "").replace("```", "").strip()
+            
+            if not content:
+                raise ValueError("LLaMA returned an empty content string.")
+                
             itinerary_data = json.loads(content)
 
             # 4. Save to Cache

@@ -2,9 +2,9 @@
 # This file configures Caddy to serve our static Vue assets and proxy /api requests to Django
 
 :80 {
-    # Reverse proxy API traffic to the backend Kubernetes service first
+    # Reverse proxy API traffic to the backend Docker container
     handle /api/* {
-        reverse_proxy travel-ai-backend-service:8000
+        reverse_proxy travel-ai-backend:8000
     }
 
     # Handle static files and SPA routing

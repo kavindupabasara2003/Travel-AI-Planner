@@ -71,8 +71,8 @@ class LLaMAService:
         if query_embedding:
             cached_itinerary = self.store.find_similar(query_text, query_embedding)
             if cached_itinerary:
-                print("⚠️ Found Cache, but BYPASSING to force 7-day LLaMA regeneration.")
-                # return cached_itinerary
+                print("✅ Exact String Match Cache Hit! (PostgreSQL)")
+                return cached_itinerary
 
         # 2. Cache Miss - Prompt Construction
         system_prompt = f"You are an expert Sri Lanka Travel Agent. Generate a highly detailed, unique travel itinerary. You MUST generate the complete itinerary for the full {duration} days requested. DO NOT STOP EARLY."

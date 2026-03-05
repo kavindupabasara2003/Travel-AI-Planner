@@ -13,7 +13,8 @@ const router = createRouter({
         {
             path: '/planner',
             name: 'planner',
-            component: () => import('../views/PlannerView.vue')
+            component: () => import('../views/PlannerView.vue'),
+            meta: { requiresAuth: true }
         },
         {
             path: '/profile',

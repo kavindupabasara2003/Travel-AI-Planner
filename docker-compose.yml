@@ -19,7 +19,7 @@ services:
   api:
     build: ./backend
     container_name: travel-ai-backend
-    command: gunicorn --bind 0.0.0.0:8000 travel_ai_backend.wsgi:application
+    command: gunicorn --bind 0.0.0.0:8000 --timeout 300 travel_ai_backend.wsgi:application
     volumes:
       - ./backend:/app
     ports:
@@ -29,6 +29,7 @@ services:
     environment:
       - DB_HOST=db
       - DB_PORT=5432
+      - OLLAMA_HOST=http://host.docker.internal:11434
     restart: unless-stopped
 
   # 3. Vue Frontend

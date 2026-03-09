@@ -1,4 +1,4 @@
-# 🌴 Travel AI Planner (Layla AI Theme)
+# 🌴 Travel AI Planner 
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.0-4FC08D?logo=vue.js)](https://vuejs.org/)
 [![Django](https://img.shields.io/badge/Django-4.2-092E20?logo=django)](https://www.djangoproject.com/)

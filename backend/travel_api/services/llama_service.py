@@ -191,6 +191,176 @@ class LLaMAService:
             print(f"LLaMA Error: {e}")
             return {"error": str(e)}
 
+    def generate_multi_itinerary(self, user_preferences):
+        """
+        Generate 3 itinerary variations simultaneously (Feature 1).
+        Variation A: The Classic  — popular attractions, safe tourist route
+        Variation B: Hidden Gems  — off-beaten-path, local favourites
+        Variation C: Balanced Mix — highlights + hidden gems combined
+        Each variation is cached independently using its own cache key suffix.
+        """
+        if isinstance(user_preferences, dict):
+            duration = str(user_preferences.get('duration', '7'))
+            start_loc = str(user_preferences.get('startLocation', 'Colombo')).strip()
+            group = str(user_preferences.get('groupSize', 'Couple')).strip()
+            trip_type = str(user_preferences.get('tripType', 'Beach')).strip()
+            base_query = f"Duration: {duration} Days | Start Location: {start_loc} | Group: {group} | Style: {trip_type}"
+        else:
+            return {"error": "generate_multi_itinerary requires a dict of preferences"}
+
+        variations = [
+            {
+                "key": "classic",
+                "label": "The Classic",
+                "emoji": "🏆",
+                "cache_suffix": " | Variation: Classic",
+                "persona_instruction": (
+                    "Focus EXCLUSIVELY on Sri Lanka's most famous, iconic, and highly-rated tourist attractions. "
+                    "Choose destinations every guidebook recommends: Sigiriya Rock, Temple of the Tooth, Galle Fort, "
+                    "Yala National Park, Mirissa Beach, etc. This is the safe, proven, crowd-favourite route."
+                ),
+            },
+            {
+                "key": "hidden_gems",
+                "label": "Hidden Gems",
+                "emoji": "💎",
+                "cache_suffix": " | Variation: Hidden Gems",
+                "persona_instruction": (
+                    "AVOID all mainstream tourist hotspots. Focus EXCLUSIVELY on lesser-known, off-the-beaten-path "
+                    "Sri Lankan locations that most tourists miss: hidden waterfalls, local villages, secret beaches, "
+                    "lesser-visited temples, local markets, and authentic experiences. "
+                    "Do NOT include Sigiriya, Kandy Temple, Galle Fort, or Mirissa unless absolutely necessary."
+                ),
+            },
+            {
+                "key": "balanced",
+                "label": "Balanced Mix",
+                "emoji": "⚖️",
+                "cache_suffix": " | Variation: Balanced",
+                "persona_instruction": (
+                    "Create a balanced itinerary combining 50% well-known highlights with 50% hidden gems and "
+                    "local favourites. Each day should offer variety — pair a famous attraction with a local secret spot. "
+                    "Optimise for maximum variety and authentic experience."
+                ),
+            },
+        ]
+
+        results = []
+        for var in variations:
+            cache_key = base_query + var["cache_suffix"]
+            embedding = self.get_embedding(cache_key)
+
+            # Check cache
+            if embedding:
+                cached = self.store.find_similar(cache_key, embedding)
+                if cached:
+                    print(f"✅ Cache hit for {var['label']}")
+                    cached["variation_type"] = var["key"]
+                    cached["variation_label"] = var["label"]
+                    cached["variation_emoji"] = var["emoji"]
+                    results.append(cached)
+                    continue
+
+            # Generate
+            system_prompt = (
+                f"You are an expert Sri Lanka Travel Agent. {var['persona_instruction']} "
+                f"Generate a complete {duration}-day itinerary. DO NOT STOP EARLY."
+            )
+            user_message = f"""
+TASK: Create a {duration}-Day {var['label']} itinerary for: "{base_query}"
+
+REQUIRED JSON FORMAT:
+{{
+  "title": "Unique catchy title reflecting the {var['label']} style",
+  "summary": "One compelling sentence summarising this variation",
+  "trip_theme": "{trip_type}",
+  "variation_type": "{var['key']}",
+  "variation_label": "{var['label']}",
+  "variation_emoji": "{var['emoji']}",
+  "total_days": {duration},
+  "days": [
+    {{
+      "day": 1,
+      "location": "MUST BE {start_loc}",
+      "theme": "Day theme",
+      "activities": [
+        {{"time": "Morning", "activity": "Activity Name", "description": "Detailed description"}},
+        {{"time": "Afternoon", "activity": "Activity Name", "description": "Detailed description"}}
+      ],
+      "suggested_restaurants": ["Restaurant 1", "Restaurant 2"],
+      "narrative": "Full descriptive paragraph about the day.",
+      "reasoning": "WHY this location fits the {var['label']} style."
+    }}
+  ]
+}}
+
+RULES:
+1. Day 1 MUST start at {start_loc}.
+2. Generate EXACTLY {duration} days.
+3. Use real Sri Lankan locations, restaurants, and activities.
+4. {var['persona_instruction']}
+5. Ensure geographic progression across Sri Lanka.
+"""
+            payload = {
+                "model": self.fallback_model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message},
+                ],
+                "stream": False,
+                "format": "json",
+                "options": {"temperature": 0.5, "num_ctx": 8192, "num_predict": 4096},
+            }
+
+            try:
+                print(f"🚀 Generating {var['label']} variation...")
+                resp = requests.post(self.ollama_url, json=payload)
+                resp.raise_for_status()
+                raw = resp.json().get("message", {}).get("content", "")
+
+                # Extract JSON
+                start = raw.find('{')
+                if start != -1:
+                    depth = 0
+                    end = -1
+                    for i in range(start, len(raw)):
+                        if raw[i] == '{': depth += 1
+                        elif raw[i] == '}':
+                            depth -= 1
+                            if depth == 0:
+                                end = i
+                                break
+                    content = raw[start:end+1] if end != -1 else raw
+                else:
+                    content = raw
+
+                content = content.replace("```json", "").replace("```", "").strip()
+                itinerary = json.loads(content)
+                itinerary["variation_type"] = var["key"]
+                itinerary["variation_label"] = var["label"]
+                itinerary["variation_emoji"] = var["emoji"]
+
+                # Post-process: weather optimizer + XAI
+                try:
+                    from .itinerary_optimizer import ItineraryOptimizer
+                    itinerary = ItineraryOptimizer().optimize(itinerary)
+                except Exception:
+                    pass
+                itinerary = self._enrich_reasoning_traces(itinerary)
+
+                # Cache
+                if embedding:
+                    self.store.save(cache_key, embedding, itinerary)
+
+                results.append(itinerary)
+
+            except Exception as e:
+                print(f"Error generating {var['label']}: {e}")
+                results.append({"error": str(e), "variation_type": var["key"],
+                                "variation_label": var["label"], "variation_emoji": var["emoji"]})
+
+        return results
+
     def _enrich_reasoning_traces(self, itinerary: dict) -> dict:
         """
         Enrich each day's LLM 'reasoning' with real data:

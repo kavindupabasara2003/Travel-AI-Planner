@@ -15,16 +15,14 @@ const form = ref({
   startLocation: props.initialData?.startLocation || 'Colombo (CMB Airport)',
   groupSize: props.initialData?.groupSize || 'Couple',
   tripType: props.initialData?.tripType || 'Beach',
-  startDate: props.initialData?.startDate || new Date().toISOString().substr(0, 10)
+  startDate: props.initialData?.startDate || new Date().toISOString().substr(0, 10),
+  budget: props.initialData?.budget || 'Standard',
+  multiVariation: props.initialData?.multiVariation || false,
 })
 
 const submitForm = () => {
-    // Basic validation
-    if(form.value.duration < 1) return;
-    
-    // Create a detailed prompt string or just pass the object
-    // We will pass the object to the parent, let parent handle API format
-    emit('submit', form.value)
+    if (form.value.duration < 1) return
+    emit('submit', { ...form.value })
 }
 </script>
 
@@ -73,9 +71,33 @@ const submitForm = () => {
         </div>
       </div>
 
-       <div class="form-group">
+      <div class="form-group">
         <label>Start Date</label>
         <input type="date" v-model="form.startDate" />
+      </div>
+
+      <div class="form-group">
+        <label>Budget Per Day</label>
+        <div class="tag-group">
+          <button :class="{ active: form.budget === 'Budget' }"    @click="form.budget = 'Budget'">💰 Budget &lt;$30</button>
+          <button :class="{ active: form.budget === 'Standard' }"  @click="form.budget = 'Standard'">💳 Standard</button>
+          <button :class="{ active: form.budget === 'Premium' }"   @click="form.budget = 'Premium'">💎 Premium</button>
+          <button :class="{ active: form.budget === 'Luxury' }"    @click="form.budget = 'Luxury'">👑 Luxury</button>
+        </div>
+      </div>
+
+      <div class="form-group toggle-group">
+        <label>Generate 3 Variations?</label>
+        <div class="toggle-row">
+          <div class="toggle-wrap" @click="form.multiVariation = !form.multiVariation">
+            <div class="toggle-track" :class="{ on: form.multiVariation }">
+              <div class="toggle-thumb"></div>
+            </div>
+          </div>
+          <span class="toggle-hint">
+            {{ form.multiVariation ? '3 variations: Classic · Hidden Gems · Balanced' : 'Single itinerary (faster)' }}
+          </span>
+        </div>
       </div>
 
       <button class="submit-btn" @click="submitForm">{{ props.initialData ? 'Update Journey ✨' : 'Generate Itinerary ✨' }}</button>
@@ -242,6 +264,52 @@ select {
 }
 
 .submit-btn:active {
-    transform: translateY(0);
+  transform: translateY(0);
+}
+
+/* Toggle switch */
+.toggle-group label { margin-bottom: 0.7rem; display: block; }
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.toggle-wrap { cursor: pointer; }
+
+.toggle-track {
+  width: 48px;
+  height: 26px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 13px;
+  position: relative;
+  transition: background 0.25s;
+}
+
+.toggle-track.on {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.toggle-thumb {
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  transition: transform 0.25s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.toggle-track.on .toggle-thumb { transform: translateX(22px); }
+
+.toggle-hint {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  flex: 1;
 }
 </style>

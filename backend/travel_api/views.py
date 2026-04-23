@@ -220,6 +220,27 @@ class TripAssistantView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class MultiItineraryView(APIView):
+    """
+    POST /api/v1/plan/multi/
+    Body: { "preferences": { duration, startLocation, groupSize, tripType } }
+    Returns list of 3 itinerary variations.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        preferences = request.data.get("preferences")
+        if not preferences:
+            return Response({"error": "preferences required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            agent = LLaMAService()
+            variations = agent.generate_multi_itinerary(preferences)
+            return Response({"variations": variations}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class CrowdPredictView(APIView):
     """
     GET /api/v1/crowd/?date=2026-04-25

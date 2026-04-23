@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { haversineDistance, getCityCoords } from '../../utils/cityCoords.js'
+import { getCO2kg, formatCO2, co2Level } from '../../utils/carbonCalculator.js'
 
 const props = defineProps({
   fromDay: { type: Object, required: true },
@@ -50,16 +51,19 @@ const transport = computed(() => {
   const c2 = getCityCoords(props.toDay.location)
   const dist = c1 && c2 ? Math.round(haversineDistance(c1, c2)) : null
 
+  let route
   if (matched) {
-    return { ...matched[1], dist }
+    route = { ...matched[1], dist }
+  } else if (dist !== null) {
+    if (dist < 30)  route = { mode: 'Tuk-tuk',      icon: '🛺', duration: `~${Math.round(dist * 2.5)} min`, dist, scenic: false }
+    else if (dist < 100) route = { mode: 'Bus',       icon: '🚌', duration: `~${Math.round(dist / 40 * 60)} min`, dist, scenic: false }
+    else route = { mode: 'Private Car/Bus', icon: '🚗', duration: `~${Math.round(dist / 60)} h`, dist, scenic: false }
+  } else {
+    return null
   }
-  // Generic fallback based on distance
-  if (dist !== null) {
-    if (dist < 30)  return { mode: 'Tuk-tuk',     icon: '🛺', duration: `~${Math.round(dist * 2.5)} min`, dist, scenic: false }
-    if (dist < 100) return { mode: 'Bus',          icon: '🚌', duration: `~${Math.round(dist / 40 * 60)} min`, dist, scenic: false }
-    return            { mode: 'Private Car/Bus', icon: '🚗', duration: `~${Math.round(dist / 60)} h`, dist, scenic: false }
-  }
-  return null
+
+  const co2 = getCO2kg(route.mode, route.dist || 0)
+  return { ...route, co2, co2Label: co2Level(co2) }
 })
 </script>
 
@@ -75,6 +79,12 @@ const transport = computed(() => {
         <span v-if="transport.dist" class="tc-sep">·</span>
         <span v-if="transport.dist" class="tc-dist">{{ transport.dist }} km</span>
         <span v-if="transport.scenic" class="tc-scenic">🌄 Scenic</span>
+        <span
+          v-if="transport.co2"
+          class="tc-co2"
+          :style="{ color: transport.co2Label.color }"
+          :title="transport.co2Label.label + ' emissions'"
+        >🌱 {{ formatCO2(transport.co2) }}</span>
       </div>
       <div v-if="transport.note" class="tc-note">{{ transport.note }}</div>
     </div>
@@ -127,6 +137,13 @@ const transport = computed(() => {
   background: #f0fdf4;
   padding: 0.1rem 0.45rem;
   border-radius: var(--radius-full);
+}
+.tc-co2 {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-full);
+  background: #f0fdf4;
 }
 .tc-note {
   width: 100%;

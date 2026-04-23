@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import AspectRadarChart from './AspectRadarChart.vue'
 import { getCityImage } from '../../utils/cityImages.js'
+import { getPackingTips } from '../../utils/packingTips.js'
 
 const props = defineProps({
   day: { type: Object, required: true },
@@ -14,9 +15,16 @@ const showTips = ref(false)
 const imageUrl = getCityImage(props.day.location, props.day.theme)
 
 const weatherEmoji = (day) => day.weather_forecast?.emoji ?? ''
-const weatherTemp = (day) => day.weather_forecast?.max_temp ? `${day.weather_forecast.max_temp}°C` : ''
+const weatherTemp  = (day) => day.weather_forecast?.max_temp ? `${day.weather_forecast.max_temp}°C` : ''
 
 const trace = props.day.reasoning_trace || null
+
+// Use LLM-provided tips if present, otherwise generate from knowledge base
+const tips = computed(() => {
+  if (props.day.tips?.length) return props.day.tips
+  const weatherCode = props.day.weather_forecast?.weather_code ?? null
+  return getPackingTips(props.day.theme || '', weatherCode, 7)
+})
 </script>
 
 <template>
@@ -112,14 +120,14 @@ const trace = props.day.reasoning_trace || null
           </div>
         </div>
 
-        <!-- Packing & Safety Tips -->
-        <div v-if="day.tips && day.tips.length" class="collapsible-section">
+        <!-- Packing & Safety Tips (always shown — from LLM or knowledge base) -->
+        <div class="collapsible-section">
           <button class="collapsible-btn" @click="showTips = !showTips">
             🎒 Pack & Safety
             <span class="chevron" :class="{ open: showTips }">›</span>
           </button>
           <div v-if="showTips" class="tips-body">
-            <span v-for="tip in day.tips" :key="tip" class="tip-pill">{{ tip }}</span>
+            <span v-for="tip in tips" :key="tip" class="tip-pill">{{ tip }}</span>
           </div>
         </div>
       </div>

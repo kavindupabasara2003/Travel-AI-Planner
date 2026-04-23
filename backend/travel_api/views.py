@@ -337,3 +337,20 @@ class TravelTwinView(APIView):
             return Response({"twins": results}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PersonaView(APIView):
+    """
+    GET /api/v1/persona/
+    Returns the authenticated user's travel persona based on saved trip themes.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            from .services.persona_engine import PersonaEngine
+            engine = PersonaEngine()
+            persona = engine.get_persona(request.user)
+            return Response(persona, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

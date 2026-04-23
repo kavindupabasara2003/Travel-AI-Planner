@@ -4,7 +4,7 @@ from .views import (
     ItineraryAgentView, TripAssistantView, RegisterView, SavedTripView,
     AspectScoreView, ConversationHistoryView,
     CrowdPredictView, WeatherForecastView, TravelTwinView,
-    MultiItineraryView,
+    MultiItineraryView, PersonaView,
 )
 from .serializers import CustomTokenObtainPairView
 from .admin_views import (
@@ -29,6 +29,7 @@ urlpatterns = [
     path('forecast/', WeatherForecastView.as_view(), name='weather_forecast'),
     path('twins/', TravelTwinView.as_view(), name='travel_twins'),
     path('history/', ConversationHistoryView.as_view(), name='conversation_history'),
+    path('persona/', PersonaView.as_view(), name='travel_persona'),
 
     # Admin API Routes
     path('admin/stats/', AdminStatsView.as_view(), name='admin_stats'),

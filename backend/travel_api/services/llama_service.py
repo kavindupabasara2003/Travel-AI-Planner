@@ -78,7 +78,7 @@ class LLaMAService:
         system_prompt = f"You are an expert Sri Lanka Travel Agent. Generate a highly detailed, unique travel itinerary. You MUST generate the complete itinerary for the full {duration} days requested. DO NOT STOP EARLY."
         user_message = f"""
         TASK: Create a {duration}-Day itinerary for: "{query_text}"
-        
+
         REQUIRED JSON FORMAT:
         {{
           "title": "Create a unique and catchy trip title here",
@@ -95,7 +95,8 @@ class LLaMAService:
                     {{"time": "Afternoon", "activity": "Specific Activity Name", "description": "Write a detailed description of what they will do"}}
                 ],
                 "suggested_restaurants": ["Name of a real restaurant in this city", "Another real restaurant"],
-                "narrative": "Write a full descriptive paragraph about the day's experiences."
+                "narrative": "Write a full descriptive paragraph about the day's experiences.",
+                "reasoning": "Explain in 1-2 sentences WHY this location was chosen: geographic progression from previous day, how it fits the {trip_type} style, and what makes it ideal for day 1."
             }},
             {{
                 "day": 2,
@@ -105,17 +106,19 @@ class LLaMAService:
                     {{"time": "Morning", "activity": "Specific Activity Name", "description": "Details..."}}
                 ],
                 "suggested_restaurants": ["Restaurant 1"],
-                "narrative": "Paragraph..."
+                "narrative": "Paragraph...",
+                "reasoning": "WHY this city follows logically from day 1 and fits the trip style."
             }}
           ]
         }}
-        
+
         IMPORTANT RULES:
         1. CRITICAL: Day 1 location MUST absolutely be "{start_loc}". Do not start the trip anywhere else.
         2. CRITICAL: You MUST generate EXACTLY {duration} objects in the "days" array (Day 1, Day 2, ..., Day {duration}). You must continue extending the array until you reach {duration} days!
         3. Replace ALL placeholder text with real, factual Sri Lankan locations, activities, and restaurant names relevant to a "{trip_type}" style trip.
         4. Maintain strict JSON formatting. DO NOT include code comments in the output JSON.
         5. CRITICAL: ENSURE GEOGRAPHIC PROGRESSION. You MUST NOT stay in the exact same city for more than 2 or 3 days. The user must travel to multiple distinct regions of Sri Lanka (e.g., South Coast, Cultural Triangle, Hill Country) as the itinerary progresses.
+        6. For every day, include a "reasoning" field explaining the location choice.
         """
 
         # 3. LLaMA Generation
@@ -165,16 +168,100 @@ class LLaMAService:
                 
             itinerary_data = json.loads(content)
 
-            # 4. Save to Cache
+            # 4. Post-processing: weather-adaptive re-ordering
+            try:
+                from .itinerary_optimizer import ItineraryOptimizer
+                optimizer = ItineraryOptimizer()
+                itinerary_data = optimizer.optimize(itinerary_data)
+                print(f"✅ Weather optimizer applied. Swaps: {len(itinerary_data.get('optimization_log', []))}")
+            except Exception as opt_err:
+                print(f"⚠️  Weather optimizer skipped: {opt_err}")
+
+            # 5. Post-processing: enrich reasoning traces with real data (XAI Feature 5)
+            itinerary_data = self._enrich_reasoning_traces(itinerary_data)
+
+            # 6. Save to Cache
             if query_embedding:
                 print("💾 Saving new itinerary to Vector Bank...")
                 self.store.save(query_text, query_embedding, itinerary_data)
-                
+
             return itinerary_data
             
         except Exception as e:
             print(f"LLaMA Error: {e}")
             return {"error": str(e)}
+
+    def _enrich_reasoning_traces(self, itinerary: dict) -> dict:
+        """
+        Enrich each day's LLM 'reasoning' with real data:
+        weather forecast, crowd prediction, and ABSA scores where available.
+        Produces a structured 'reasoning_trace' dict on each day.
+        """
+        from datetime import date as date_cls
+        try:
+            from .crowd_predictor import CrowdPredictor
+            crowd_predictor = CrowdPredictor()
+        except Exception:
+            crowd_predictor = None
+
+        days = itinerary.get("days", [])
+        start_date = date_cls.today()
+
+        for i, day in enumerate(days):
+            day_date = (start_date + __import__("datetime").timedelta(days=i)).isoformat()
+            location = day.get("location", "")
+            llm_reasoning = day.get("reasoning", "")
+
+            trace = {"location_choice": llm_reasoning}
+
+            # Weather
+            wf = day.get("weather_forecast", {})
+            if wf:
+                trace["weather_alignment"] = (
+                    f"{wf.get('emoji','')}{wf.get('max_temp','')}°C, "
+                    f"outdoor score {wf.get('outdoor_score', 0):.0%}"
+                )
+            else:
+                trace["weather_alignment"] = "Weather data unavailable."
+
+            # Crowd prediction
+            if crowd_predictor:
+                try:
+                    crowd = crowd_predictor.predict(day_date)
+                    trace["crowd_prediction"] = (
+                        f"{crowd['label']} ({crowd['level']}/5) — "
+                        f"{'Public holiday — expect high crowds' if crowd['is_poya'] else ''}"
+                        f"{'Weekend — moderate-high crowds' if crowd['is_weekend'] and not crowd['is_poya'] else ''}"
+                        f"{'Weekday — manageable crowds' if not crowd['is_weekend'] and not crowd['is_poya'] else ''}"
+                    ).strip(" —")
+                except Exception:
+                    trace["crowd_prediction"] = "Crowd data unavailable."
+            else:
+                trace["crowd_prediction"] = "Crowd model not ready."
+
+            # ABSA aspect highlights
+            try:
+                from travel_api.models import AttractionAspectScore
+                aspects = AttractionAspectScore.objects.filter(
+                    located_city__icontains=location.split("(")[0].strip()
+                ).first()
+                if aspects:
+                    top = sorted({
+                        "Scenery": aspects.scenery,
+                        "Cleanliness": aspects.cleanliness,
+                        "Safety": aspects.safety,
+                        "Cultural Significance": aspects.cultural_significance,
+                    }.items(), key=lambda x: x[1], reverse=True)[:2]
+                    trace["aspect_highlights"] = ", ".join(f"{k}: {v:.0%}" for k, v in top)
+                else:
+                    trace["aspect_highlights"] = "No aspect data for this location yet."
+            except Exception:
+                trace["aspect_highlights"] = "Aspect data unavailable."
+
+            day["reasoning_trace"] = trace
+
+        itinerary["days"] = days
+        return itinerary
 
     def generate_chat_response(self, user_text):
         """

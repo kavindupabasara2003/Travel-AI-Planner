@@ -3,6 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
 from django.contrib.auth.models import User
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+from datetime import datetime, timedelta
 from .models import SavedTrip, ItineraryCache
 
 class AdminStatsView(APIView):
@@ -103,3 +106,45 @@ class AdminCacheDetailView(APIView):
             return Response({"message": "Cache entry deleted successfully"}, status=status.HTTP_200_OK)
         except ItineraryCache.DoesNotExist:
             return Response({"error": "Cache entry not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class AdminAnalyticsView(APIView):
+    """GET /api/v1/admin/analytics/ — chart data for admin dashboard."""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        since = datetime.now() - timedelta(days=30)
+
+        # Trips per day (last 30 days)
+        trips_by_day = (
+            SavedTrip.objects.filter(created_at__gte=since)
+            .annotate(date=TruncDate("created_at"))
+            .values("date")
+            .annotate(count=Count("id"))
+            .order_by("date")
+        )
+
+        # Theme distribution
+        theme_dist = {}
+        for trip in SavedTrip.objects.all():
+            theme = trip.itinerary_json.get("trip_theme", "Unknown") if isinstance(trip.itinerary_json, dict) else "Unknown"
+            theme_dist[theme] = theme_dist.get(theme, 0) + 1
+
+        # Popular start cities
+        city_dist = {}
+        for trip in SavedTrip.objects.all():
+            if isinstance(trip.itinerary_json, dict):
+                days = trip.itinerary_json.get("days", [])
+                if days:
+                    city = days[0].get("location", "Unknown")
+                    city_dist[city] = city_dist.get(city, 0) + 1
+        top_cities = sorted(city_dist.items(), key=lambda x: x[1], reverse=True)[:8]
+
+        total_requests = ItineraryCache.objects.count()
+
+        return Response({
+            "trips_by_day": [{"date": str(r["date"]), "count": r["count"]} for r in trips_by_day],
+            "theme_distribution": [{"theme": k, "count": v} for k, v in theme_dist.items()],
+            "popular_start_cities": [{"city": c, "count": n} for c, n in top_cities],
+            "cache_total": total_requests,
+        }, status=status.HTTP_200_OK)

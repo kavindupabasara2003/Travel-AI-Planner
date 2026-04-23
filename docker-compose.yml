@@ -1,43 +1,52 @@
-version: '3.8'
-
 services:
+
   # 1. PostgreSQL + pgvector
   db:
     image: pgvector/pgvector:pg16
-    container_name: travel-ai-postgres-prod
+    container_name: travel-ai-postgres
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: travel_ai
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d travel_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
   # 2. Django Backend
   api:
     build: ./backend
     container_name: travel-ai-backend
-    command: gunicorn --bind 0.0.0.0:8000 --timeout 300 travel_ai_backend.wsgi:application
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - DB_HOST=db
       - DB_PORT=5432
+      - DB_NAME=travel_ai
+      - DB_USER=admin
+      - DB_PASSWORD=admin
       - OLLAMA_HOST=http://host.docker.internal:11434
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - CORS_ALLOW_ALL=True
     restart: unless-stopped
 
-  # 3. Vue Frontend
+  # 3. Vue Frontend (Caddy serving built assets + reverse-proxying /api to backend)
   frontend:
     build: ./frontend
     container_name: travel-ai-frontend
     ports:
-      - "5173:80" # Mapping to standard Vue dev port for familiarity, bridging to Nginx
+      - "5173:80"
     depends_on:
       - api
     restart: unless-stopped

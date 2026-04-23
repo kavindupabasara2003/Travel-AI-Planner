@@ -354,3 +354,82 @@ class PersonaView(APIView):
             return Response(persona, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AsyncPlanView(APIView):
+    """
+    POST /api/v1/plan/async/
+    Submits a single-variation itinerary generation job to Celery.
+    Returns { "job_id": "<task-id>" } immediately.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        preferences = request.data.get("preferences")
+        if not preferences:
+            return Response({"error": "preferences required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            from .tasks import generate_single_task
+            task = generate_single_task.delay(preferences)
+            return Response({"job_id": task.id}, status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AsyncMultiPlanView(APIView):
+    """
+    POST /api/v1/plan/multi/async/
+    Submits a 3-variation itinerary generation job to Celery.
+    Returns { "job_id": "<task-id>" } immediately.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        preferences = request.data.get("preferences")
+        if not preferences:
+            return Response({"error": "preferences required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            from .tasks import generate_multi_task
+            task = generate_multi_task.delay(preferences)
+            return Response({"job_id": task.id}, status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class JobStatusView(APIView):
+    """
+    GET /api/v1/plan/status/<job_id>/
+    Poll the status of a Celery generation task.
+    Returns: { status, progress, message, result? }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, job_id):
+        try:
+            from celery.result import AsyncResult
+            result = AsyncResult(job_id)
+            state = result.state
+
+            if state == 'PENDING':
+                return Response({'status': 'pending', 'progress': 0, 'message': 'Queued — waiting for worker...'})
+            elif state == 'STARTED':
+                return Response({'status': 'processing', 'progress': 5, 'message': 'Starting generation...'})
+            elif state == 'PROGRESS':
+                meta = result.info or {}
+                return Response({
+                    'status': 'processing',
+                    'progress': meta.get('progress', 0),
+                    'message': meta.get('message', 'Generating...'),
+                })
+            elif state == 'SUCCESS':
+                return Response({'status': 'done', 'progress': 100, 'result': result.result})
+            elif state == 'FAILURE':
+                return Response({
+                    'status': 'error',
+                    'progress': 0,
+                    'message': str(result.result),
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({'status': state.lower(), 'progress': 0, 'message': ''})
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

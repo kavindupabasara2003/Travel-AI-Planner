@@ -8,15 +8,28 @@ const TIER_COSTS = {
 
 // City tier multipliers (some cities are pricier)
 const CITY_MULTIPLIER = {
-  colombo:     1.3,
-  galle:       1.2,
-  'nuwara eliya': 1.15,
-  kandy:       1.1,
-  negombo:     1.15,
-  bentota:     1.1,
-  mirissa:     1.1,
-  sigiriya:    1.05,
-  ella:        1.05,
+  colombo:        1.35,
+  galle:          1.25,
+  'nuwara eliya': 1.2,
+  kandy:          1.15,
+  negombo:        1.15,
+  bentota:        1.2,
+  mirissa:        1.15,
+  sigiriya:       1.1,
+  ella:           1.1,
+  trincomalee:    1.0,
+  arugam:         0.95,
+  yala:           1.3,
+  udawalawe:      1.15,
+  minneriya:      1.1,
+  wilpattu:       1.2,
+  jaffna:         0.9,
+  haputale:       0.88,
+  bandarawela:    0.88,
+  tangalle:       0.92,
+  hikkaduwa:      1.05,
+  unawatuna:      1.1,
+  matara:         0.9,
 }
 
 function getCityMultiplier(location) {

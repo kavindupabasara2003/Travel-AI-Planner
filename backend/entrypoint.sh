@@ -24,10 +24,16 @@ echo "✅ PostgreSQL is ready"
 echo "📦 Running migrations..."
 python manage.py migrate --noinput
 
-echo "🚀 Starting Gunicorn..."
-exec gunicorn \
-  --bind 0.0.0.0:8000 \
-  --timeout 300 \
-  --workers 2 \
-  --access-logfile - \
-  travel_ai_backend.wsgi:application
+# If extra arguments were passed (e.g. from docker-compose command:), run those instead of gunicorn
+if [ "$#" -gt 0 ]; then
+  echo "🚀 Executing: $*"
+  exec "$@"
+else
+  echo "🚀 Starting Gunicorn..."
+  exec gunicorn \
+    --bind 0.0.0.0:8000 \
+    --timeout 600 \
+    --workers 2 \
+    --access-logfile - \
+    travel_ai_backend.wsgi:application
+fi

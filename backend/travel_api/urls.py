@@ -5,6 +5,7 @@ from .views import (
     AspectScoreView, ConversationHistoryView,
     CrowdPredictView, WeatherForecastView, TravelTwinView,
     MultiItineraryView, PersonaView,
+    AsyncPlanView, AsyncMultiPlanView, JobStatusView,
 )
 from .serializers import CustomTokenObtainPairView
 from .admin_views import (
@@ -14,22 +15,32 @@ from .admin_views import (
 )
 
 urlpatterns = [
+    # Core generation (synchronous)
     path('plan/', ItineraryAgentView.as_view(), name='plan_itinerary'),
-    path('chat/', TripAssistantView.as_view(), name='trip_chat'),
+    path('plan/multi/', MultiItineraryView.as_view(), name='multi_itinerary'),
+
+    # Async generation via Celery (Phase 6C)
+    path('plan/async/', AsyncPlanView.as_view(), name='async_plan'),
+    path('plan/multi/async/', AsyncMultiPlanView.as_view(), name='async_multi_plan'),
+    path('plan/status/<str:job_id>/', JobStatusView.as_view(), name='job_status'),
+
+    # Auth
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('register/', RegisterView.as_view(), name='auth_register'),
+
+    # Trips
     path('trips/', SavedTripView.as_view(), name='saved_trips'),
     path('trips/<int:pk>/', SavedTripView.as_view(), name='saved_trip_detail'),
 
     # Phase 1 & 2 endpoints
-    path('plan/multi/', MultiItineraryView.as_view(), name='multi_itinerary'),
     path('aspects/', AspectScoreView.as_view(), name='aspect_scores'),
     path('crowd/', CrowdPredictView.as_view(), name='crowd_predict'),
     path('forecast/', WeatherForecastView.as_view(), name='weather_forecast'),
     path('twins/', TravelTwinView.as_view(), name='travel_twins'),
     path('history/', ConversationHistoryView.as_view(), name='conversation_history'),
     path('persona/', PersonaView.as_view(), name='travel_persona'),
+    path('chat/', TripAssistantView.as_view(), name='trip_chat'),
 
     # Admin API Routes
     path('admin/stats/', AdminStatsView.as_view(), name='admin_stats'),

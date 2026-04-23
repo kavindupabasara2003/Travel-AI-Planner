@@ -19,7 +19,18 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # 2. Django Backend
+  # 2. Redis (Celery broker + result backend)
+  redis:
+    image: redis:7-alpine
+    container_name: travel-ai-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # 3. Django Backend (API server)
   api:
     build: ./backend
     container_name: travel-ai-backend
@@ -30,6 +41,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - DB_HOST=db
       - DB_PORT=5432
@@ -37,11 +50,36 @@ services:
       - DB_USER=admin
       - DB_PASSWORD=admin
       - OLLAMA_HOST=http://host.docker.internal:11434
+      - REDIS_URL=redis://redis:6379/0
       - ALLOWED_HOSTS=localhost,127.0.0.1
       - CORS_ALLOW_ALL=True
     restart: unless-stopped
 
-  # 3. Vue Frontend (Caddy serving built assets + reverse-proxying /api to backend)
+  # 4. Celery Worker (async itinerary generation)
+  celery:
+    build: ./backend
+    container_name: travel-ai-celery
+    command: celery -A travel_ai_backend worker --loglevel=info --concurrency=2 -Q celery
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=travel_ai
+      - DB_USER=admin
+      - DB_PASSWORD=admin
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - REDIS_URL=redis://redis:6379/0
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - CORS_ALLOW_ALL=True
+    restart: unless-stopped
+
+  # 5. Vue Frontend (Caddy serving built assets + reverse-proxying /api to backend)
   frontend:
     build: ./frontend
     container_name: travel-ai-frontend

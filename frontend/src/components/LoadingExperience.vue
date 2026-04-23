@@ -10,11 +10,11 @@ const FACTS = [
   'Sri Lanka is the world\'s 4th largest tea producer ☕',
   'The Sigiriya rock fortress is over 1,500 years old 🪨',
   'Sri Lanka has over 200 species of butterflies 🦋',
-  'The blue whale, the largest animal on Earth, is spotted off Sri Lanka\'s coast 🐋',
-  'Sri Lanka was the first country in the world to elect a female prime minister 👩‍⚖️',
+  'The blue whale is spotted off Sri Lanka\'s coast every year 🐋',
+  'Sri Lanka was the first country to elect a female prime minister 👩‍⚖️',
   'Cinnamon was first exported from Sri Lanka in the 13th century 🌿',
   'Sri Lanka has 3 ancient capitals: Anuradhapura, Polonnaruwa, and Kandy 🏰',
-  'The Kandy–Ella train ride is rated one of the world\'s most scenic railway journeys 🚂',
+  'The Kandy–Ella train ride is rated one of the world\'s most scenic journeys 🚂',
 ]
 
 const currentFact = ref(FACTS[0])
@@ -25,7 +25,7 @@ onMounted(() => {
   factTimer = setInterval(() => {
     factIndex.value = (factIndex.value + 1) % FACTS.length
     currentFact.value = FACTS[factIndex.value]
-  }, 3000)
+  }, 3500)
 })
 
 onUnmounted(() => {
@@ -48,8 +48,19 @@ onUnmounted(() => {
       <!-- Stage message -->
       <div class="stage-text">{{ chatStore.loadingStage || 'Preparing your journey...' }}</div>
 
-      <!-- Progress dots -->
-      <div class="progress-dots">
+      <!-- Real progress bar -->
+      <div class="progress-bar-track">
+        <div
+          class="progress-bar-fill"
+          :style="{ width: `${chatStore.progress || 0}%` }"
+        ></div>
+      </div>
+      <div class="progress-pct" v-if="chatStore.progress > 0">
+        {{ Math.round(chatStore.progress) }}%
+      </div>
+
+      <!-- Animated dots (shown while progress is 0) -->
+      <div class="progress-dots" v-if="!chatStore.progress">
         <span class="dot"></span>
         <span class="dot"></span>
         <span class="dot"></span>
@@ -70,8 +81,8 @@ onUnmounted(() => {
 .loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(249, 249, 251, 0.85);
-  backdrop-filter: blur(12px);
+  background: rgba(249, 249, 251, 0.88);
+  backdrop-filter: blur(14px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,11 +96,10 @@ onUnmounted(() => {
   box-shadow: var(--shadow-lg);
   padding: 3rem 3.5rem;
   text-align: center;
-  max-width: 420px;
+  max-width: 440px;
   width: 90%;
 }
 
-/* Compass animation */
 .compass-wrap {
   display: flex;
   justify-content: center;
@@ -145,21 +155,45 @@ onUnmounted(() => {
   50%       { transform: scale(1.15); opacity: 0.6; }
 }
 
-/* Stage text */
 .stage-text {
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--color-text-main);
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   min-height: 1.6em;
 }
 
-/* Dots */
+/* Real progress bar */
+.progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--color-bg-light);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), #a78bfa);
+  border-radius: 99px;
+  transition: width 0.6s ease;
+  min-width: 4px;
+}
+
+.progress-pct {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 1.25rem;
+}
+
+/* Dots (pre-progress) */
 .progress-dots {
   display: flex;
   justify-content: center;
   gap: 0.4rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .dot {
@@ -178,12 +212,12 @@ onUnmounted(() => {
   40%            { transform: scale(1); opacity: 1; }
 }
 
-/* Fact box */
 .fact-box {
   background: var(--color-primary-light);
   border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
   text-align: left;
+  margin-top: 0.5rem;
 }
 
 .fact-label {
@@ -201,7 +235,6 @@ onUnmounted(() => {
   line-height: 1.5;
 }
 
-/* Fact transition */
 .fact-fade-enter-active,
 .fact-fade-leave-active { transition: opacity 0.5s ease, transform 0.5s ease; }
 .fact-fade-enter-from   { opacity: 0; transform: translateY(6px); }

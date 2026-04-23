@@ -14,6 +14,11 @@ const authStore = useAuthStore()
 const isJourneyActive = ref(false)
 const showSetup = ref(true)
 const chatOpen = ref(false)
+const errorBanner = ref('')
+
+function exportPDF() {
+  window.print()
+}
 
 const hasItinerary = computed(() => !!(chatStore.itinerary || chatStore.variations?.length))
 const hasVariations = computed(() => !!(chatStore.variations?.length > 1))
@@ -22,9 +27,12 @@ const startJourney = () => {
   if (hasItinerary.value) isJourneyActive.value = true
 }
 
+const dismissError = () => { errorBanner.value = '' }
+
 const handlePlanSubmit = async (formData) => {
   showSetup.value = false
   chatOpen.value = false
+  errorBanner.value = ''
 
   const promptText = `${formData.duration} days trip starting from ${formData.startLocation} for a ${formData.groupSize}. Style: ${formData.tripType}. Budget: ${formData.budget}.`
   chatStore.messages.push({ id: Date.now(), role: 'user', content: promptText })
@@ -33,6 +41,11 @@ const handlePlanSubmit = async (formData) => {
     await chatStore.generateMultiItinerary(formData)
   } else {
     await chatStore.generateItinerary(formData)
+  }
+
+  if (!hasItinerary.value) {
+    showSetup.value = true
+    errorBanner.value = 'The AI model could not generate an itinerary. Please try again in a moment.'
   }
 }
 </script>
@@ -66,11 +79,25 @@ const handlePlanSubmit = async (formData) => {
         <button class="tb-btn chat-trigger" @click="chatOpen = true">
           💬 Chat with AI
         </button>
+        <button class="tb-btn pdf-btn" @click="exportPDF" title="Export PDF">
+          📄 Export PDF
+        </button>
+        <router-link to="/profile" class="tb-btn profile-btn" title="My Profile">
+          👤 Profile
+        </router-link>
       </div>
     </div>
 
     <!-- Main Content Area (full width) -->
     <div class="main-area" :class="{ 'has-topbar': hasItinerary && !showSetup }">
+
+      <!-- Error banner -->
+      <Transition name="banner-slide">
+        <div v-if="errorBanner" class="error-banner">
+          <span>⚠️ {{ errorBanner }}</span>
+          <button class="banner-close" @click="dismissError">✕</button>
+        </div>
+      </Transition>
 
       <!-- Trip Setup Form (modal overlay) -->
       <TripSetupForm
@@ -91,7 +118,7 @@ const handlePlanSubmit = async (formData) => {
       <!-- Multi-variation compare bar + dashboard -->
       <template v-else-if="!showSetup && !chatStore.isLoading">
         <ItineraryCompare v-if="hasVariations" />
-        <ItineraryDashboard />
+        <ItineraryDashboard @open-chat="chatOpen = true" />
       </template>
     </div>
 
@@ -241,6 +268,54 @@ const handlePlanSubmit = async (formData) => {
 
 .tb-btn.chat-trigger:hover { opacity: 0.9; }
 
+.tb-btn.profile-btn {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-color: var(--color-border);
+  color: var(--color-text-main);
+}
+
+.tb-btn.profile-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tb-btn.pdf-btn {
+  border-color: #d1fae5;
+  color: #059669;
+  background: #f0fdf4;
+}
+
+.tb-btn.pdf-btn:hover {
+  background: #059669;
+  color: white;
+  border-color: #059669;
+}
+
+/* ─── Print / PDF Export ─── */
+@media print {
+  /* Hide all UI chrome */
+  .top-bar,
+  .chat-fab,
+  .chat-drawer,
+  .drawer-backdrop,
+  .error-banner { display: none !important; }
+
+  .planner-root {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  .main-area {
+    height: auto !important;
+    overflow: visible !important;
+    padding-top: 0 !important;
+  }
+}
+
 /* Main area */
 .main-area {
   height: 100vh;
@@ -379,4 +454,44 @@ const handlePlanSubmit = async (formData) => {
   padding: 0.75rem;
   text-decoration: none;
 }
+
+/* Error banner */
+.error-banner {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  color: #b91c1c;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 600;
+  box-shadow: 0 4px 16px rgba(185,28,28,0.12);
+  max-width: 480px;
+  width: calc(100vw - 2rem);
+}
+
+.banner-close {
+  background: none;
+  border: none;
+  color: #b91c1c;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+.banner-close:hover { opacity: 1; }
+
+.banner-slide-enter-active,
+.banner-slide-leave-active { transition: opacity 0.3s, transform 0.3s; }
+.banner-slide-enter-from,
+.banner-slide-leave-to { opacity: 0; transform: translateX(-50%) translateY(-12px); }
 </style>

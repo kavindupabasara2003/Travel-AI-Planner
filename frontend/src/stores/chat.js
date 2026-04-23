@@ -12,11 +12,12 @@ export const useChatStore = defineStore('chat', {
             }
         ],
         isLoading: false,
-        loadingStage: '',          // current stage message shown in LoadingExperience
-        itinerary: null,           // active single itinerary
-        variations: null,          // array of 3 itinerary variations (Feature 1)
-        activeVariationIndex: 0,   // which tab is selected (0=Classic, 1=Hidden, 2=Balanced)
-        mixedDays: [],             // Pick & Mix custom days
+        loadingStage: '',
+        progress: 0,           // 0-100 for the progress bar
+        itinerary: null,
+        variations: null,
+        activeVariationIndex: 0,
+        mixedDays: [],
         currentPreferences: null,
     }),
 
@@ -26,7 +27,6 @@ export const useChatStore = defineStore('chat', {
             return state.variations[state.activeVariationIndex] || state.variations[0]
         },
         displayItinerary(state) {
-            // Show active variation if we have multi, otherwise single
             if (state.variations && state.variations.length) {
                 return state.variations[state.activeVariationIndex] || null
             }
@@ -37,47 +37,42 @@ export const useChatStore = defineStore('chat', {
     actions: {
         setVariation(index) {
             this.activeVariationIndex = index
-            // Sync single itinerary to the selected variation so components work without change
             if (this.variations && this.variations[index]) {
                 this.itinerary = this.variations[index]
             }
         },
 
+        // --- Single itinerary (async Celery path) ---
         async generateItinerary(formData) {
             this.isLoading = true
             this.variations = null
             this.itinerary = null
+            this.progress = 0
+            this.loadingStage = 'Submitting your request...'
             const authStore = useAuthStore()
-
-            const stages = [
-                'Analysing your preferences...',
-                'Exploring 500+ attractions...',
-                'Optimising for weather...',
-                'Crafting your perfect itinerary...',
-                'Adding final touches...',
-            ]
-            let stageIdx = 0
-            this.loadingStage = stages[0]
-            const stageTimer = setInterval(() => {
-                stageIdx = Math.min(stageIdx + 1, stages.length - 1)
-                this.loadingStage = stages[stageIdx]
-            }, 5000)
 
             try {
                 if (typeof formData === 'object') this.currentPreferences = formData
 
-                const response = await axios.post(
-                    '/api/v1/plan/',
+                // Submit job
+                const submit = await axios.post(
+                    '/api/v1/plan/async/',
                     { preferences: formData },
                     { headers: { Authorization: `Bearer ${authStore.token}` } }
                 )
+                const jobId = submit.data.job_id
+                this.loadingStage = 'Generating your perfect itinerary...'
+                this.progress = 10
 
-                if (response.data && response.data.days) {
-                    this.itinerary = response.data
+                // Poll for result
+                const result = await this._pollJob(jobId, authStore.token)
+
+                if (result && result.days) {
+                    this.itinerary = result
                     this.messages.push({
                         id: Date.now() + 1,
                         role: 'assistant',
-                        content: `✅ I've created "${response.data.title}" for you! Check the dashboard.`,
+                        content: `✅ I've created "${result.title}" for you! Check the dashboard.`,
                     })
                 } else {
                     this.messages.push({
@@ -94,53 +89,58 @@ export const useChatStore = defineStore('chat', {
                     content: 'Sorry, I had trouble creating the plan. Please try again.',
                 })
             } finally {
-                clearInterval(stageTimer)
                 this.isLoading = false
                 this.loadingStage = ''
+                this.progress = 0
             }
         },
 
+        // --- Multi-variation itinerary (async Celery path) ---
         async generateMultiItinerary(formData) {
             this.isLoading = true
             this.variations = null
             this.itinerary = null
             this.activeVariationIndex = 0
+            this.progress = 0
+            this.loadingStage = 'Submitting your request...'
             const authStore = useAuthStore()
-
-            const stages = [
-                'Generating The Classic route...',
-                'Discovering Hidden Gems...',
-                'Crafting the Balanced Mix...',
-                'Optimising all 3 variations for weather...',
-                'Finalising your personalised options...',
-            ]
-            let stageIdx = 0
-            this.loadingStage = stages[0]
-            const stageTimer = setInterval(() => {
-                stageIdx = Math.min(stageIdx + 1, stages.length - 1)
-                this.loadingStage = stages[stageIdx]
-            }, 8000)
 
             try {
                 if (typeof formData === 'object') this.currentPreferences = formData
 
-                const response = await axios.post(
-                    '/api/v1/plan/multi/',
+                // Submit job
+                const submit = await axios.post(
+                    '/api/v1/plan/multi/async/',
                     { preferences: formData },
                     { headers: { Authorization: `Bearer ${authStore.token}` } }
                 )
+                const jobId = submit.data.job_id
+                this.loadingStage = 'Generating 3 variations...'
+                this.progress = 5
 
-                if (response.data && response.data.variations) {
-                    this.variations = response.data.variations.filter(v => !v.error)
-                    if (this.variations.length) {
-                        this.itinerary = this.variations[0]
+                // Poll for result
+                const result = await this._pollJob(jobId, authStore.token)
+
+                if (result && result.variations) {
+                    const valid = result.variations.filter(v => v && !v.error && v.days)
+                    if (valid.length) {
+                        this.variations = valid
+                        this.itinerary = valid[0]
                         this.messages.push({
                             id: Date.now() + 1,
                             role: 'assistant',
-                            content: `✅ I've generated ${this.variations.length} itinerary variations! Pick your favourite or mix and match days.`,
+                            content: `✅ I've generated ${valid.length} itinerary variation${valid.length > 1 ? 's' : ''}! Pick your favourite or mix and match days.`,
+                        })
+                    } else {
+                        this.variations = null
+                        this.messages.push({
+                            id: Date.now() + 1,
+                            role: 'assistant',
+                            content: '⚠️ The AI model returned no valid itineraries. Please try again.',
                         })
                     }
                 } else {
+                    this.variations = null
                     this.messages.push({
                         id: Date.now() + 1,
                         role: 'assistant',
@@ -149,16 +149,47 @@ export const useChatStore = defineStore('chat', {
                 }
             } catch (error) {
                 console.error('Multi-plan Error:', error)
+                this.variations = null
                 this.messages.push({
                     id: Date.now() + 1,
                     role: 'assistant',
                     content: 'Sorry, multi-variation generation failed. Please try again.',
                 })
             } finally {
-                clearInterval(stageTimer)
                 this.isLoading = false
                 this.loadingStage = ''
+                this.progress = 0
             }
+        },
+
+        // --- Internal: poll /api/v1/plan/status/<jobId>/ until done ---
+        _pollJob(jobId, token) {
+            return new Promise((resolve, reject) => {
+                const interval = setInterval(async () => {
+                    try {
+                        const res = await axios.get(
+                            `/api/v1/plan/status/${jobId}/`,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        )
+                        const { status, progress, message, result } = res.data
+
+                        if (progress !== undefined) this.progress = progress
+                        if (message) this.loadingStage = message
+
+                        if (status === 'done') {
+                            clearInterval(interval)
+                            resolve(result)
+                        } else if (status === 'error') {
+                            clearInterval(interval)
+                            reject(new Error(message || 'Generation failed'))
+                        }
+                        // 'pending' / 'processing' — keep polling
+                    } catch (err) {
+                        clearInterval(interval)
+                        reject(err)
+                    }
+                }, 2000)
+            })
         },
 
         loadSavedItinerary(tripJson) {

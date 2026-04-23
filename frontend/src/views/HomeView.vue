@@ -397,7 +397,7 @@ export default {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 2rem 2rem 8rem;
+  padding: 1rem 2rem 5rem;
   max-width: 860px;
   margin: 0 auto;
   width: 100%;
@@ -415,20 +415,20 @@ export default {
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.1rem;
   backdrop-filter: blur(8px);
 }
 
 .hero-title {
-  font-size: clamp(3rem, 6.5vw, 5.2rem);
+  font-size: clamp(2.6rem, 5.5vw, 4.8rem);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.03em;
   color: white;
   display: flex;
   flex-direction: column;
-  gap: 0.08em;
-  margin-bottom: 1.25rem;
+  gap: 0.06em;
+  margin-bottom: 0.9rem;
   text-shadow: 0 2px 24px rgba(0,0,0,0.4);
 }
 
@@ -438,11 +438,11 @@ export default {
 }
 
 .hero-sub {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: rgba(255,255,255,0.82);
-  line-height: 1.65;
-  max-width: 560px;
-  margin: 0 auto 2.25rem;
+  line-height: 1.6;
+  max-width: 540px;
+  margin: 0 auto 1.5rem;
   text-shadow: 0 1px 8px rgba(0,0,0,0.3);
 }
 
@@ -458,8 +458,8 @@ export default {
   width: 100%;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.25);
-  margin-bottom: 1.75rem;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.35), 0 0 0 3px rgba(255,255,255,0.15);
+  margin-bottom: 1.25rem;
 }
 
 .search-container:hover {

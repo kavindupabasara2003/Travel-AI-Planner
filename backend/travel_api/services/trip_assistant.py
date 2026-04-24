@@ -72,13 +72,26 @@ class TripAssistantService:
                 return holiday.get("summary")
         return None
 
-    def get_advice(self, query, location_name, lat=None, lon=None, activity=None, description=None, theme=None):
+    def get_advice(self, query, location_name, lat=None, lon=None, activity=None, description=None, theme=None, itinerary_date=None):
         """
         Generate advice based on User Query + Real-time Context (Weather + Holidays) + Current Activity.
+        itinerary_date: 'YYYY-MM-DD' of the specific itinerary day being viewed (may differ from today).
         """
-        current_time = datetime.now(ZoneInfo("Asia/Colombo"))
-        date_str = current_time.strftime("%Y-%m-%d")
-        day_of_week = current_time.strftime("%A")
+        colombo_tz = ZoneInfo("Asia/Colombo")
+
+        # Use the itinerary day's date for holiday/weekend checks so Day 3 (Sunday)
+        # is not evaluated as today (Friday). Fall back to today if not provided.
+        if itinerary_date:
+            try:
+                check_date = datetime.strptime(itinerary_date, "%Y-%m-%d").replace(tzinfo=colombo_tz)
+            except ValueError:
+                check_date = datetime.now(colombo_tz)
+        else:
+            check_date = datetime.now(colombo_tz)
+
+        current_time = datetime.now(colombo_tz)  # still used for the clock display
+        date_str = check_date.strftime("%Y-%m-%d")
+        day_of_week = check_date.strftime("%A")
         time_str = current_time.strftime("%I:%M %p")
         
         # 1. Base Context

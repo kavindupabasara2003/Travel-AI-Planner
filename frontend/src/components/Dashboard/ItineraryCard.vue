@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import AspectRadarChart from './AspectRadarChart.vue'
-import { getCityImage } from '../../utils/cityImages.js'
+import { getCityImage, getThemeGradient } from '../../utils/cityImages.js'
 import { getPackingTips } from '../../utils/packingTips.js'
 
 const props = defineProps({
@@ -11,24 +11,30 @@ const props = defineProps({
 
 const showReasoning = ref(false)
 const showTips = ref(false)
+const imgFailed = ref(false)
 
 const imageUrl = getCityImage(props.day.location, props.day.theme)
+const gradientFallback = getThemeGradient(props.day.theme || '')
 
 const weatherEmoji = (day) => day.weather_forecast?.emoji ?? ''
 const weatherTemp  = (day) => day.weather_forecast?.max_temp ? `${day.weather_forecast.max_temp}°C` : ''
 
 const trace = props.day.reasoning_trace || null
 
-// Use LLM-provided tips if present, otherwise generate from knowledge base
 const tips = computed(() => {
   if (props.day.tips?.length) return props.day.tips
   const weatherCode = props.day.weather_forecast?.weather_code ?? null
   return getPackingTips(props.day.theme || '', weatherCode, 7)
 })
+
+function onImgError(e) {
+  imgFailed.value = true
+  e.target.style.display = 'none'
+}
 </script>
 
 <template>
-  <div class="timeline-item">
+  <div class="timeline-item" :id="`day-${day.day}`">
     <!-- Timeline Marker -->
     <div class="timeline-marker">
       <div class="day-circle-icon">📍</div>
@@ -37,16 +43,25 @@ const tips = computed(() => {
     <!-- Content Card -->
     <div class="day-card glass-panel">
       <!-- City-specific Image Header -->
-      <div class="card-image-header">
-        <img :src="imageUrl" :alt="day.location" class="card-img" />
+      <div
+        class="card-image-header"
+        :style="imgFailed ? { background: gradientFallback } : {}"
+      >
+        <img
+          v-if="!imgFailed"
+          :src="imageUrl"
+          :alt="day.location"
+          class="card-img"
+          @error="onImgError"
+        />
+        <!-- Gradient overlay city label when image fails -->
+        <div v-if="imgFailed" class="img-fallback-label">{{ day.location }}</div>
         <!-- Weather overlay badge -->
         <div v-if="day.weather_forecast?.emoji" class="weather-badge">
           {{ weatherEmoji(day) }} {{ weatherTemp(day) }}
         </div>
-        <!-- Swap badge -->
-        <div v-if="day.weather_forecast && day.day" class="day-num-badge">
-          Day {{ day.day }}
-        </div>
+        <!-- Day number badge -->
+        <div class="day-num-badge">Day {{ day.day }}</div>
       </div>
 
       <div class="card-content">
@@ -185,6 +200,17 @@ const tips = computed(() => {
   overflow: hidden;
   background-color: var(--color-border);
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.img-fallback-label {
+  color: white;
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  letter-spacing: -0.01em;
 }
 
 .card-img {

@@ -85,14 +85,26 @@ const saveTrip = async () => {
     }
 }
 
+const getItineraryDate = () => {
+    const startDate = chatStore.currentPreferences?.startDate
+    if (!startDate) return null
+    // Parse as local date components to avoid UTC offset shifting the date
+    const [year, month, day] = startDate.split('-').map(Number)
+    const d = new Date(year, month - 1, day + currentDayIndex.value)
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+}
+
 const askAssistant = async (query) => {
     if (!props.trip) return
     isLoadingAdvice.value = true
     assistantResponse.value = ""
-    
+
     try {
         // Mock Kandy coords for demo if location text matches
-        let lat = 7.2906, lon = 80.6337 
+        let lat = 7.2906, lon = 80.6337
         if (currentDay.value?.location.toLowerCase().includes("galle") || currentActivity.value.activity.toLowerCase().includes("beach")) {
              lat = 6.0535; lon = 80.2210; // Galle
         }
@@ -110,7 +122,8 @@ const askAssistant = async (query) => {
                 lon: lon,
                 activity: currentActivity.value?.activity,
                 description: currentActivity.value?.description,
-                theme: props.trip?.trip_theme
+                theme: props.trip?.trip_theme,
+                itinerary_date: getItineraryDate()
             })
         })
         

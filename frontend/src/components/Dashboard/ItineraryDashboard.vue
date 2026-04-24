@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import axios from 'axios'
 import { useChatStore } from '../../stores/chat'
 import { useAuthStore } from '../../stores/auth'
@@ -8,21 +8,39 @@ import WeatherStrip from './WeatherStrip.vue'
 import ItineraryMapView from './ItineraryMapView.vue'
 import TransportCard from './TransportCard.vue'
 import TravelTwinsPanel from './TravelTwinsPanel.vue'
-import { getCityImage } from '../../utils/cityImages.js'
+import TripSidebar from './TripSidebar.vue'
+import { getCityImage, getThemeGradient } from '../../utils/cityImages.js'
 import { getTripBudget, TIER_LABELS } from '../../utils/budgetEstimator.js'
+
+const emit = defineEmits(['open-chat'])
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
 const isSaving   = ref(false)
 const saveSuccess = ref(false)
 const aspectMap  = ref({})
-const viewMode   = ref('timeline')  // 'timeline' | 'map'
+const viewMode       = ref('timeline')  // 'timeline' | 'map'
+const heroImgFailed  = ref(false)
+const selectedMapDay = ref(null)
 
 const heroImage = computed(() => {
   if (!chatStore.itinerary) return ''
   const firstDay = chatStore.itinerary.days?.[0]
   return getCityImage(firstDay?.location || '', chatStore.itinerary.trip_theme || '')
 })
+
+const heroGradient = computed(() =>
+  getThemeGradient(chatStore.itinerary?.trip_theme || '')
+)
+
+function onHeroImgError(e) {
+  heroImgFailed.value = true
+  e.target.style.display = 'none'
+}
+
+function onMapDaySelect(day) {
+  selectedMapDay.value = selectedMapDay.value?.day === day.day ? null : day
+}
 
 const budgetTier = computed(() => chatStore.currentPreferences?.budget || 'Standard')
 
@@ -99,8 +117,20 @@ watch(() => chatStore.itinerary, (newVal) => {
     <div v-else class="itinerary-content">
       <!-- Hero Header -->
       <div class="trip-hero">
-        <div class="hero-image-wrapper">
-          <img class="hero-image" :src="heroImage" :alt="getLocation(chatStore.itinerary)" />
+        <div
+          class="hero-image-wrapper"
+          :style="heroImgFailed ? { background: heroGradient } : {}"
+        >
+          <img
+            v-if="!heroImgFailed"
+            class="hero-image"
+            :src="heroImage"
+            :alt="getLocation(chatStore.itinerary)"
+            @error="onHeroImgError"
+          />
+          <div v-if="heroImgFailed" class="hero-img-fallback-label">
+            {{ getLocation(chatStore.itinerary) }}
+          </div>
           <div v-if="chatStore.itinerary.weather_optimized" class="optimized-badge"
                :title="`${chatStore.itinerary.optimization_log?.length} day(s) re-ordered for weather`">
             🌤️ Weather Optimised
@@ -165,56 +195,110 @@ watch(() => chatStore.itinerary, (newVal) => {
         :optimization-log="chatStore.itinerary.optimization_log || []"
       />
 
-      <!-- View Toggle -->
-      <div class="view-toggle-bar">
-        <button
-          class="view-btn"
-          :class="{ active: viewMode === 'timeline' }"
-          @click="viewMode = 'timeline'"
-        >
-          📋 Timeline
-        </button>
-        <button
-          class="view-btn"
-          :class="{ active: viewMode === 'map' }"
-          @click="viewMode = 'map'"
-        >
-          🗺️ Map View
-        </button>
-      </div>
+      <!-- Two-column layout: main content + sidebar -->
+      <div class="content-grid">
 
-      <!-- Map View -->
-      <div v-if="viewMode === 'map'" class="map-section">
-        <ItineraryMapView />
-      </div>
+        <!-- Main column -->
+        <div class="main-column">
 
-      <!-- Timeline View -->
-      <div v-else class="timeline-container">
-        <div class="timeline-line"></div>
-
-        <div class="timeline-start-node">
-          <div class="node-icon">🛫</div>
-          <div class="node-text">
-            <span class="node-title">Arrival</span>
-            <span class="node-sub">Airport Transfer</span>
+          <!-- View Toggle -->
+          <div class="view-toggle-bar">
+            <button
+              class="view-btn"
+              :class="{ active: viewMode === 'timeline' }"
+              @click="viewMode = 'timeline'"
+            >
+              📋 Timeline
+            </button>
+            <button
+              class="view-btn"
+              :class="{ active: viewMode === 'map' }"
+              @click="viewMode = 'map'"
+            >
+              🗺️ Map View
+            </button>
           </div>
-        </div>
 
-        <div class="days-list">
-          <template v-for="(day, idx) in days" :key="day.day">
-            <!-- Transport connector between days -->
-            <TransportCard
-              v-if="idx > 0"
-              :from-day="days[idx - 1]"
-              :to-day="day"
-            />
-            <ItineraryCard :day="day" :aspect-scores="getAspectScores(day)" />
-          </template>
-        </div>
-      </div>
+          <!-- Map View -->
+          <div v-if="viewMode === 'map'" class="map-section">
+            <ItineraryMapView @select-day="onMapDaySelect" />
 
-      <!-- Travel Twins Panel -->
-      <TravelTwinsPanel />
+            <!-- Map Day Detail Panel -->
+            <Transition name="panel-slide">
+              <div v-if="selectedMapDay" class="map-day-panel">
+                <div class="mdp-header">
+                  <div class="mdp-day-badge">Day {{ selectedMapDay.day }}</div>
+                  <div class="mdp-location">
+                    <span class="mdp-city">{{ selectedMapDay.location }}</span>
+                    <span v-if="selectedMapDay.theme" class="mdp-theme-tag">{{ selectedMapDay.theme }}</span>
+                    <span v-if="selectedMapDay.weather_forecast?.emoji" class="mdp-weather">
+                      {{ selectedMapDay.weather_forecast.emoji }} {{ selectedMapDay.weather_forecast.max_temp }}°C
+                    </span>
+                  </div>
+                  <button class="mdp-close" @click="selectedMapDay = null">✕</button>
+                </div>
+                <p v-if="selectedMapDay.narrative" class="mdp-narrative">{{ selectedMapDay.narrative }}</p>
+                <div v-if="selectedMapDay.activities?.length" class="mdp-activities">
+                  <div
+                    v-for="act in selectedMapDay.activities"
+                    :key="act.activity"
+                    class="mdp-act-row"
+                  >
+                    <span class="mdp-act-time">{{ act.time }}</span>
+                    <div>
+                      <div class="mdp-act-name">{{ act.activity }}</div>
+                      <div v-if="act.description" class="mdp-act-desc">{{ act.description }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mdp-footer">
+                  <button
+                    class="mdp-jump-btn"
+                    @click="viewMode = 'timeline'; nextTick(() => { const el = document.getElementById(`day-${selectedMapDay.day}`); if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }) })"
+                  >
+                    📋 View in Timeline
+                  </button>
+                </div>
+              </div>
+            </Transition>
+          </div>
+
+          <!-- Timeline View -->
+          <div v-else class="timeline-container">
+            <div class="timeline-line"></div>
+
+            <div class="timeline-start-node">
+              <div class="node-icon">🛫</div>
+              <div class="node-text">
+                <span class="node-title">Arrival</span>
+                <span class="node-sub">Airport Transfer</span>
+              </div>
+            </div>
+
+            <div class="days-list">
+              <template v-for="(day, idx) in days" :key="day.day">
+                <TransportCard
+                  v-if="idx > 0"
+                  :from-day="days[idx - 1]"
+                  :to-day="day"
+                />
+                <ItineraryCard :day="day" :aspect-scores="getAspectScores(day)" />
+              </template>
+            </div>
+          </div>
+
+          <!-- Travel Twins Panel -->
+          <TravelTwinsPanel />
+
+        </div><!-- /main-column -->
+
+        <!-- Sidebar -->
+        <TripSidebar
+          :budget-tier="budgetTier"
+          @open-chat="emit('open-chat')"
+        />
+
+      </div><!-- /content-grid -->
     </div>
   </div>
 </template>
@@ -272,6 +356,15 @@ watch(() => chatStore.itinerary, (newVal) => {
 }
 
 .hero-image { width: 100%; height: 100%; object-fit: cover; }
+
+.hero-img-fallback-label {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  padding: 1rem;
+  text-align: center;
+}
 
 .optimized-badge {
   position: absolute;
@@ -399,13 +492,23 @@ watch(() => chatStore.itinerary, (newVal) => {
 
 .save-action .success-btn { border-color: var(--color-accent); color: var(--color-accent); }
 
+/* Two-column layout */
+.content-grid {
+  display: flex;
+  gap: 2rem;
+  padding: 0 2rem 4rem 3rem;
+  max-width: 1380px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+.main-column { flex: 1; min-width: 0; }
+
 /* View toggle */
 .view-toggle-bar {
   display: flex;
   gap: 0.5rem;
-  padding: 0 4rem;
-  max-width: 1000px;
-  margin: 0 auto 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .view-btn {
@@ -435,22 +538,156 @@ watch(() => chatStore.itinerary, (newVal) => {
 
 /* Map section */
 .map-section {
-  padding: 0 4rem 4rem;
-  max-width: 1000px;
-  margin: 0 auto;
+  padding-bottom: 2rem;
 }
+
+/* Map Day Detail Panel */
+.map-day-panel {
+  margin-top: 1rem;
+  background: var(--color-bg-card);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem;
+  box-shadow: 0 4px 20px rgba(139,92,246,0.12);
+}
+
+.mdp-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.mdp-day-badge {
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.mdp-location {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.mdp-city {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.mdp-theme-tag {
+  font-size: 0.75rem;
+  background: #f0fdf4;
+  color: #059669;
+  border: 1px solid #d1fae5;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+}
+
+.mdp-weather {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.mdp-close {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mdp-close:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+
+.mdp-narrative {
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+.mdp-activities {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.mdp-act-row {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.mdp-act-time {
+  min-width: 72px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  padding-top: 0.1rem;
+}
+
+.mdp-act-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-bottom: 0.15rem;
+}
+
+.mdp-act-desc {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.mdp-footer { border-top: 1px solid var(--color-border); padding-top: 1rem; }
+
+.mdp-jump-btn {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-full);
+  padding: 0.45rem 1.1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.mdp-jump-btn:hover { background: var(--color-primary); color: white; }
+
+.panel-slide-enter-active,
+.panel-slide-leave-active { transition: opacity 0.3s, transform 0.3s; }
+.panel-slide-enter-from,
+.panel-slide-leave-to { opacity: 0; transform: translateY(-10px); }
 
 /* Timeline */
 .timeline-container {
   position: relative;
-  padding: 2rem 4rem 6rem 4rem;
-  max-width: 1000px;
-  margin: 0 auto;
+  padding: 2rem 0 4rem;
 }
 
 .timeline-line {
   position: absolute;
-  left: 4.5rem;
+  left: 0.5rem;
   top: 2rem;
   bottom: 0;
   width: 2px;

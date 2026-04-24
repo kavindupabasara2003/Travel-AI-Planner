@@ -21,7 +21,48 @@ export const useAuthStore = defineStore('auth', {
                 this.token = storedToken
                 this.refreshToken = storedRefresh
                 this.user = JSON.parse(storedUser)
+                this._setupAxiosInterceptor()
             }
+        },
+
+        _setupAxiosInterceptor() {
+            // Attach Bearer token to every axios request automatically
+            axios.interceptors.request.use(config => {
+                const token = localStorage.getItem('access_token')
+                if (token) config.headers['Authorization'] = `Bearer ${token}`
+                return config
+            })
+
+            // On 401 response, try to refresh the token once, then retry
+            axios.interceptors.response.use(
+                response => response,
+                async error => {
+                    const original = error.config
+                    const isRefreshCall = original.url?.includes('token/refresh')
+                    if (error.response?.status === 401 && !original._retry && !isRefreshCall) {
+                        original._retry = true
+                        try {
+                            const refresh = localStorage.getItem('refresh_token')
+                            if (!refresh) throw new Error('No refresh token')
+                            const res = await axios.post('/api/v1/token/refresh/', { refresh })
+                            const newAccess = res.data.access
+                            this.token = newAccess
+                            localStorage.setItem('access_token', newAccess)
+                            original.headers['Authorization'] = `Bearer ${newAccess}`
+                            return axios(original) // retry original request
+                        } catch {
+                            // Refresh also failed — clear tokens and redirect to login
+                            localStorage.removeItem('access_token')
+                            localStorage.removeItem('refresh_token')
+                            localStorage.removeItem('user_data')
+                            this.token = null
+                            this.user = null
+                            window.location.href = '/'
+                        }
+                    }
+                    return Promise.reject(error)
+                }
+            )
         },
 
         async signInWithEmail(email, password) {
@@ -40,6 +81,7 @@ export const useAuthStore = defineStore('auth', {
                 localStorage.setItem('refresh_token', this.refreshToken);
                 localStorage.setItem('user_data', JSON.stringify(this.user));
 
+                this._setupAxiosInterceptor()
                 this.authModalOpen = false;
 
                 if (this.user.is_admin) {

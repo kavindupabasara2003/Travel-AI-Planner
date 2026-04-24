@@ -33,7 +33,7 @@ django:
   base64secretkey: "ZGphbmdvLWluc2VjdXJlLXN1cGVyc2VjcmV0a2V5"
   debug: "True"
   allowed_hosts: "*"
-  ollama_host: "http://host.minikube.internal:11434"
+  ollama_host: "http://host.docker.internal:11434"
   
 ingress:
   host: "travelai.local"

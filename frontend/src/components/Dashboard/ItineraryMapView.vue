@@ -5,6 +5,8 @@ import 'leaflet/dist/leaflet.css'
 import { useChatStore } from '../../stores/chat'
 import { getCityCoords, haversineDistance } from '../../utils/cityCoords.js'
 
+const emit = defineEmits(['select-day'])
+
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -14,6 +16,7 @@ L.Icon.Default.mergeOptions({
 
 const chatStore = useChatStore()
 const mapRef = ref(null)
+const selectedDayNum = ref(null)
 let mapInstance = null
 
 const THEME_COLORS = {
@@ -33,20 +36,26 @@ function getDayColor(day) {
   return THEME_COLORS.default
 }
 
-function createNumberedIcon(num, color) {
+function createNumberedIcon(num, color, isSelected = false) {
+  const size = isSelected ? 40 : 34
+  const border = isSelected ? '3px solid white' : '3px solid white'
+  const shadow = isSelected
+    ? `0 0 0 3px ${color}, 0 4px 16px rgba(0,0,0,0.35)`
+    : '0 2px 10px rgba(0,0,0,0.25)'
   return L.divIcon({
     className: '',
     html: `<div style="
-      width:34px;height:34px;border-radius:50%;
+      width:${size}px;height:${size}px;border-radius:50%;
       background:${color};color:white;
       display:flex;align-items:center;justify-content:center;
-      font-weight:700;font-size:0.82rem;font-family:inherit;
-      border:3px solid white;
-      box-shadow:0 2px 10px rgba(0,0,0,0.25);
+      font-weight:700;font-size:${isSelected ? '0.9rem' : '0.82rem'};font-family:inherit;
+      border:${border};
+      box-shadow:${shadow};
+      transition: all 0.2s;
     ">${num}</div>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-    popupAnchor: [0, -20],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2 - 4],
   })
 }
 
@@ -65,13 +74,15 @@ function createDistLabel(dist) {
   })
 }
 
+let markerRefs = []
+
 function drawItinerary() {
   if (!mapInstance || !chatStore.itinerary?.days) return
 
-  // Remove all non-tile layers
   mapInstance.eachLayer(layer => {
     if (!(layer instanceof L.TileLayer)) mapInstance.removeLayer(layer)
   })
+  markerRefs = []
 
   const days = chatStore.itinerary.days
   const plotted = []
@@ -82,7 +93,8 @@ function drawItinerary() {
     plotted.push({ coord, day })
 
     const color = getDayColor(day)
-    const marker = L.marker(coord, { icon: createNumberedIcon(day.day, color) })
+    const isSelected = selectedDayNum.value === day.day
+    const marker = L.marker(coord, { icon: createNumberedIcon(day.day, color, isSelected) })
 
     const acts = (day.activities || [])
       .slice(0, 3)
@@ -98,14 +110,24 @@ function drawItinerary() {
           background:#f3f4f6;border-radius:4px;padding:2px 6px;display:inline-block">
           ${day.theme || ''}
         </div>
-        <ul style="margin:0;padding-left:1.1rem;font-size:0.82rem;color:#374151">${acts}</ul>
+        <ul style="margin:0 0 0.5rem;padding-left:1.1rem;font-size:0.82rem;color:#374151">${acts}</ul>
+        <div style="font-size:0.75rem;color:#8b5cf6;font-weight:600;cursor:pointer"
+             onclick="document.dispatchEvent(new CustomEvent('map-day-select', {detail: ${day.day}}))">
+          View full details ↓
+        </div>
       </div>
     `, { maxWidth: 260 })
 
+    marker.on('click', () => {
+      selectedDayNum.value = selectedDayNum.value === day.day ? null : day.day
+      emit('select-day', selectedDayNum.value === null ? null : day)
+      drawItinerary()
+    })
+
     marker.addTo(mapInstance)
+    markerRefs.push({ marker, day })
   })
 
-  // Draw route polylines between consecutive plotted points
   for (let i = 0; i < plotted.length - 1; i++) {
     const from = plotted[i]
     const to   = plotted[i + 1]
@@ -125,7 +147,6 @@ function drawItinerary() {
     L.marker(mid, { icon: createDistLabel(dist) }).addTo(mapInstance)
   }
 
-  // Fit bounds
   if (plotted.length > 1) {
     mapInstance.fitBounds(plotted.map(p => p.coord), { padding: [50, 50] })
   } else if (plotted.length === 1) {
@@ -152,6 +173,7 @@ onUnmounted(() => {
 })
 
 watch(() => chatStore.itinerary, () => {
+  selectedDayNum.value = null
   if (mapInstance) drawItinerary()
 })
 </script>
@@ -169,6 +191,8 @@ watch(() => chatStore.itinerary, () => {
       </span>
     </div>
     <div ref="mapRef" class="leaflet-map"></div>
+    <!-- Hint -->
+    <div class="map-hint">Click a marker to see day details below</div>
   </div>
 </template>
 
@@ -184,7 +208,7 @@ watch(() => chatStore.itinerary, () => {
 
 .leaflet-map {
   width: 100%;
-  height: 520px;
+  height: 480px;
 }
 
 .map-legend {
@@ -207,11 +231,7 @@ watch(() => chatStore.itinerary, () => {
   box-shadow: var(--shadow-sm);
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
+.legend-item { display: flex; align-items: center; gap: 0.3rem; }
 
 .legend-dot {
   width: 10px;
@@ -227,5 +247,21 @@ watch(() => chatStore.itinerary, () => {
   border-radius: 1px;
   border-top: 2px dashed #8b5cf6;
   flex-shrink: 0;
+}
+
+.map-hint {
+  position: absolute;
+  bottom: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(0,0,0,0.55);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.2rem 0.75rem;
+  border-radius: 99px;
+  pointer-events: none;
+  white-space: nowrap;
 }
 </style>
